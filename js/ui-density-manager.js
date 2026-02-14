@@ -2,7 +2,7 @@
     'use strict';
 
     var DENSITY_LEVELS = ['minimal', 'adaptive', 'full'];
-    var MODES = ['personal', 'business', 'vision', 'ritual', 'library'];
+    var MODES = ['personal', 'business', 'vision', 'ritual', 'feed', 'library'];
     var CATEGORIES = ['stability', 'direction', 'execution', 'reflection', 'risk'];
     var TIME_BUCKETS = ['morning', 'work', 'evening', 'night', 'deepNight', 'any'];
 
@@ -11,6 +11,7 @@
         business: ['execution', 'stability', 'risk'],
         vision: ['execution', 'risk', 'direction', 'stability', 'reflection'],
         ritual: ['reflection', 'direction'],
+        feed: ['reflection', 'direction', 'stability'],
         library: ['reflection', 'direction', 'stability']
     };
 
@@ -18,6 +19,7 @@
         dashboard: '#dashboard',
         vision: '#dashboard-vision',
         ritual: '#dashboard-ritual',
+        feed: '#dashboard-feed',
         library: '#dashboard-library'
     };
 
@@ -91,6 +93,7 @@
         'ritual-walk': { category: 'stability', energyDemand: 3, timeRelevance: ['morning', 'evening'], criticalCheck: criticalWalk },
         'ritual-slow-days': { category: 'reflection', energyDemand: 1, timeRelevance: ['evening', 'night'] },
         'ritual-gatherings': { category: 'reflection', energyDemand: 2, timeRelevance: ['evening', 'night'] },
+        'feed-shell-widget': { category: 'reflection', energyDemand: 2, timeRelevance: ['any'] },
         'library-shell-widget': { category: 'reflection', energyDemand: 2, timeRelevance: ['any'] }
     };
 
@@ -161,6 +164,7 @@
         if (body.classList.contains('mode-business')) return 'business';
         if (body.classList.contains('mode-vision')) return 'vision';
         if (body.classList.contains('mode-ritual')) return 'ritual';
+        if (body.classList.contains('mode-feed')) return 'feed';
         if (body.classList.contains('mode-library')) return 'library';
         return 'personal';
     }
@@ -396,6 +400,7 @@
         if (!element || !(element instanceof HTMLElement)) return 'dashboard';
         if (element.closest(SURFACE_SELECTORS.vision)) return 'vision';
         if (element.closest(SURFACE_SELECTORS.ritual)) return 'ritual';
+        if (element.closest(SURFACE_SELECTORS.feed)) return 'feed';
         if (element.closest(SURFACE_SELECTORS.library)) return 'library';
         return 'dashboard';
     }
@@ -403,6 +408,7 @@
     function getSurfaceForMode(mode) {
         if (mode === 'vision') return 'vision';
         if (mode === 'ritual') return 'ritual';
+        if (mode === 'feed') return 'feed';
         if (mode === 'library') return 'library';
         return 'dashboard';
     }
@@ -438,6 +444,7 @@
         var surface = getSurfaceForElement(element);
         if (surface === 'vision') return 'vision';
         if (surface === 'ritual') return 'ritual';
+        if (surface === 'feed') return 'feed';
         if (surface === 'library') return 'library';
 
         var rawMode = String(element.getAttribute('data-mode') || '').toLowerCase().trim();
@@ -485,6 +492,21 @@
 
         document.querySelectorAll('#dashboard-ritual .ritual-widget').forEach(registerElement);
 
+        var feedShell = document.getElementById('feed-shell');
+        if (feedShell) {
+            registerElement(feedShell);
+            var feedRecord = registry.get(feedShell.dataset.uiWidgetId);
+            if (feedRecord) {
+                var previousFeedId = feedRecord.id;
+                feedRecord.meta.id = 'feed-shell-widget';
+                feedRecord.meta.mode = 'feed';
+                feedRecord.id = 'feed-shell-widget';
+                feedShell.dataset.uiWidgetId = 'feed-shell-widget';
+                registry.delete(previousFeedId);
+                registry.set('feed-shell-widget', feedRecord);
+            }
+        }
+
         var libraryShell = document.getElementById('library-shell');
         if (libraryShell) {
             registerElement(libraryShell);
@@ -525,6 +547,7 @@
         }
         if (surface === 'vision') return mode === 'vision';
         if (surface === 'ritual') return mode === 'ritual';
+        if (surface === 'feed') return mode === 'feed';
         if (surface === 'library') return mode === 'library';
         return true;
     }

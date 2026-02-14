@@ -25,7 +25,7 @@ Vorher unbedingt Backup machen.
 
 Meist nicht. Pruefe:
 
-- bist du im richtigen Modus (`personal/business/vision/ritual/library`)?
+- bist du im richtigen Modus (`personal/business/vision/ritual/feed/library`)?
 - ist das Widget in `Settings -> Widget Assignment` auf `hidden` oder falschen Modus gesetzt?
 - steht der Density-Modus auf `minimal` (blendet vieles aus)?
 
@@ -33,7 +33,7 @@ Meist nicht. Pruefe:
 
 - oben ueber die Modus-Buttons
 - Taste `M`
-- URL mit `?mode=vision` (oder anderer Modus), nur wenn `Allow URL mode override` aktiv ist
+- URL mit `?mode=feed` (oder anderem Modus), nur wenn `Allow URL mode override` aktiv ist
 
 ## 7) Wie funktioniert die Command Palette?
 
@@ -138,7 +138,8 @@ Ja, in `Settings -> Data Management -> Export Dashboard PNG`.
 
 Ja:
 
-- im Journal Feed (`journal.html`)
+- im Feed-Modus (`?mode=feed`, bei Bedarf mit Source-Filter `journal`)
+- legacy: `journal.html` leitet automatisch auf `index.html?mode=feed&source=journal` um
 - oder im Journal-Modal im Dashboard
 
 ## 24) Ich habe Browserdaten geloescht. Kann ich wiederherstellen?

@@ -277,7 +277,7 @@ const Store = {
 
     defaultDailyState: [], // Array of entries
 
-    SETTINGS_MODES: ['personal', 'business', 'vision', 'ritual', 'library'],
+    SETTINGS_MODES: ['personal', 'business', 'vision', 'ritual', 'feed', 'library'],
     SETTINGS_DENSITIES: ['minimal', 'adaptive', 'full'],
     SETTINGS_DATE_STYLES: ['system', 'iso', 'short', 'long'],
     SETTINGS_HOUR_CYCLES: ['system', 'h12', 'h24'],
@@ -435,6 +435,7 @@ const Store = {
                 business: true,
                 vision: true,
                 ritual: true,
+                feed: true,
                 library: true
             },
             density: {
@@ -442,6 +443,7 @@ const Store = {
                 business: 'full',
                 vision: 'full',
                 ritual: 'full',
+                feed: 'full',
                 library: 'full'
             },
             dateTime: {

@@ -253,59 +253,6 @@
 
     <div id="vignette-overlay" aria-hidden="true"></div>
 
-    <!-- Mode Toggle Bar -->
-    <div class="mode-toggle-bar">
-        <div class="mode-toggle-pill" id="mode-toggle-btn">
-            <button class="mode-btn-switch active" id="mode-label-personal" data-action="ModeManager.switchMode" data-action-args="'personal'"
-                title="Personal Mode">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span>PERSONAL</span>
-            </button>
-            <button class="mode-btn-switch" id="mode-label-business" data-action="ModeManager.switchMode" data-action-args="'business'"
-                title="Business Mode">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                </svg>
-                <span>BUSINESS</span>
-            </button>
-            <button class="mode-btn-switch" id="mode-label-vision" data-action="ModeManager.switchMode" data-action-args="'vision'"
-                title="Vision Mode">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <circle cx="12" cy="12" r="3" />
-                    <line x1="12" y1="2" x2="12" y2="6" />
-                    <line x1="12" y1="18" x2="12" y2="22" />
-                </svg>
-                <span>VISION</span>
-            </button>
-            <button class="mode-btn-switch" id="mode-label-ritual" data-action="ModeManager.switchMode" data-action-args="'ritual'"
-                title="Ritual Mode">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10" />
-                    <path d="M12 6v6l4 2" />
-                </svg>
-                <span>RITUAL</span>
-            </button>
-            <button class="mode-btn-switch" id="mode-label-library" data-action="ModeManager.switchMode" data-action-args="'library'"
-                title="Library Mode">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                </svg>
-                <span>LIBRARY</span>
-            </button>
-        </div>
-    </div>
-
     <main class="dashboard" id="dashboard">
 
         <!-- COLUMN 1: LEFT (Personal Journal, Finance, Logs) -->
@@ -317,7 +264,7 @@
                 <button class="btn-edit-widget" data-widget="journal" title="Edit Widget">✎</button>
                 <div class="journal-header">
                     <div class="widget-title ui-title">Quick Journal</div>
-                    <a href="#" data-action="openJournalFeed" data-action-args="" class="view-feed-link">View Feed &rarr;</a>
+                    <a href="journal.html" data-action="openJournalLogPage" data-action-args="" class="view-feed-link">View Feed &rarr;</a>
                 </div>
                 <textarea id="journal-area" placeholder="What's on your mind today? (Press Enter to save)"></textarea>
             </section>
@@ -1352,6 +1299,10 @@
         <div class="library-shell" id="library-shell"></div>
     </div>
 
+    <div class="feed-dashboard" id="dashboard-feed">
+        <div class="feed-shell" id="feed-shell"></div>
+    </div>
+
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal-content glass" id="modal-content">
             <button class="modal-close" id="modal-close">&times;</button>
@@ -1390,74 +1341,207 @@
         </div>
     </div>
 
-    <!-- Floating Command Dock -->
-    <nav class="command-dock-bar" id="global-controls">
-        <div class="command-dock-pill">
-            <button class="dock-btn" data-action="openJournalFeed" data-action-args="" title="Journal Feed">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                <span class="dock-btn-label">Journal</span>
-            </button>
-            <button class="dock-btn" data-action="toggleZenMode" data-action-args="" title="Focus Mode" id="btn-zen-mode">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-                </svg>
-                <span class="dock-btn-label">Focus</span>
-            </button>
-            <button class="dock-btn" data-action="toggleCandleMode" data-action-args="" title="Candle Mode" id="ritual-candle-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2c-1 4-4 6-4 10a4 4 0 0 0 8 0c0-4-3-6-4-10z"></path>
-                    <path d="M12 22v-4"></path>
-                </svg>
-                <span class="dock-btn-label">Candle</span>
-            </button>
-            <button class="dock-btn" id="btn-visual-config" title="Visualizer">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="4" y1="21" x2="4" y2="14"></line>
-                    <line x1="4" y1="10" x2="4" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12" y2="3"></line>
-                    <line x1="20" y1="21" x2="20" y2="16"></line>
-                    <line x1="20" y1="12" x2="20" y2="3"></line>
-                    <line x1="2" y1="14" x2="6" y2="14"></line>
-                    <line x1="10" y1="8" x2="14" y2="8"></line>
-                    <line x1="18" y1="16" x2="22" y2="16"></line>
-                </svg>
-                <span class="dock-btn-label">Visualizer</span>
-            </button>
-            <div class="dock-density-wrap" id="dock-density-wrap">
-                <button class="dock-btn" id="btn-density-menu" title="Density" aria-haspopup="true" aria-expanded="false"
-                    aria-controls="dock-density-menu">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 6h16"></path>
-                        <path d="M4 12h12"></path>
-                        <path d="M4 18h8"></path>
+    <!-- Master Navigation Dock -->
+    <nav class="command-dock-bar master-nav-dock visible" id="global-controls">
+        <div class="command-dock-pill master-dock-pill" aria-label="Global navigation">
+            <div class="master-nav-group has-subnav" data-subnav="mode">
+                <button class="dock-btn dock-category-btn" id="nav-category-mode" type="button"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="subnav-mode">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <circle cx="12" cy="12" r="2.5"></circle>
                     </svg>
-                    <span class="dock-btn-label">Density</span>
+                    <span class="dock-btn-label">Mode</span>
                 </button>
-                <div class="dock-density-menu hidden" id="dock-density-menu" role="menu" aria-label="Density options">
-                    <button class="dock-density-option" data-density-level="minimal" role="menuitem">Minimal</button>
-                    <button class="dock-density-option" data-density-level="adaptive" role="menuitem">Adaptive</button>
-                    <button class="dock-density-option" data-density-level="full" role="menuitem">Full</button>
+                <div class="master-subnav master-dock-modes mode-toggle-pill" id="subnav-mode" role="menu" aria-label="Choose mode">
+                    <button class="mode-btn-switch active" id="mode-label-personal" data-action="ModeManager.switchMode" data-action-args="'personal'"
+                        title="Personal Mode">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>PERSONAL</span>
+                    </button>
+                    <button class="mode-btn-switch" id="mode-label-business" data-action="ModeManager.switchMode" data-action-args="'business'"
+                        title="Work Mode">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                        </svg>
+                        <span>WORK</span>
+                    </button>
+                    <button class="mode-btn-switch" id="mode-label-vision" data-action="ModeManager.switchMode" data-action-args="'vision'"
+                        title="Vision Mode">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="3" />
+                            <line x1="12" y1="2" x2="12" y2="6" />
+                            <line x1="12" y1="18" x2="12" y2="22" />
+                        </svg>
+                        <span>VISION</span>
+                    </button>
+                    <button class="mode-btn-switch" id="mode-label-ritual" data-action="ModeManager.switchMode" data-action-args="'ritual'"
+                        title="Ritual Mode">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10" />
+                            <path d="M12 6v6l4 2" />
+                        </svg>
+                        <span>RITUAL</span>
+                    </button>
+                    <button class="mode-btn-switch" id="mode-label-feed" data-action="ModeManager.switchMode" data-action-args="'feed'"
+                        title="Timeline Mode">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M6 12h12"></path>
+                            <path d="M9 18h6"></path>
+                        </svg>
+                        <span>TIMELINE</span>
+                    </button>
+                    <button class="mode-btn-switch" id="mode-label-library" data-action="ModeManager.switchMode" data-action-args="'library'"
+                        title="Library Mode">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <span>LIBRARY</span>
+                    </button>
                 </div>
             </div>
-            <button class="dock-btn" data-action="openEditModal" data-action-args="'settings'" title="Global Settings">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path
-                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                    </path>
-                </svg>
-                <span class="dock-btn-label">Settings</span>
-            </button>
+
+            <div class="master-nav-group has-subnav" data-subnav="capture">
+                <button class="dock-btn dock-category-btn" id="nav-category-capture" type="button"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="subnav-capture">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span class="dock-btn-label">Capture</span>
+                </button>
+                <div class="master-subnav" id="subnav-capture" role="menu" aria-label="Capture actions">
+                    <button class="dock-btn" type="button" data-action="openJournalQuickEntryModal" data-action-args="" title="Write Journal">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span class="dock-btn-label">Write Journal</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="master-nav-group has-subnav" data-subnav="focus">
+                <button class="dock-btn dock-category-btn" id="nav-category-focus" type="button"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="subnav-focus">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                    </svg>
+                    <span class="dock-btn-label">Focus</span>
+                </button>
+                <div class="master-subnav" id="subnav-focus" role="menu" aria-label="Focus actions">
+                    <button class="dock-btn" type="button" data-action="toggleZenMode" data-action-args="" title="Toggle Focus Mode"
+                        id="btn-zen-mode">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                        </svg>
+                        <span class="dock-btn-label">Focus Mode</span>
+                    </button>
+                    <button class="dock-btn" type="button" data-action="toggleCandleMode" data-action-args="" title="Start Candle Session"
+                        id="ritual-candle-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2c-1 4-4 6-4 10a4 4 0 0 0 8 0c0-4-3-6-4-10z"></path>
+                            <path d="M12 22v-4"></path>
+                        </svg>
+                        <span class="dock-btn-label">Candle Session</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="master-nav-group has-subnav" data-subnav="display">
+                <button class="dock-btn dock-category-btn" id="nav-category-display" type="button"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="subnav-display">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="4" y1="21" x2="4" y2="14"></line>
+                        <line x1="4" y1="10" x2="4" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12" y2="3"></line>
+                        <line x1="20" y1="21" x2="20" y2="16"></line>
+                        <line x1="20" y1="12" x2="20" y2="3"></line>
+                    </svg>
+                    <span class="dock-btn-label">Display</span>
+                </button>
+                <div class="master-subnav" id="subnav-display" role="menu" aria-label="Display actions">
+                    <button class="dock-btn" type="button" id="btn-visual-config" title="Open Visualizer">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="4" y1="21" x2="4" y2="14"></line>
+                            <line x1="4" y1="10" x2="4" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12" y2="3"></line>
+                            <line x1="20" y1="21" x2="20" y2="16"></line>
+                            <line x1="20" y1="12" x2="20" y2="3"></line>
+                            <line x1="2" y1="14" x2="6" y2="14"></line>
+                            <line x1="10" y1="8" x2="14" y2="8"></line>
+                            <line x1="18" y1="16" x2="22" y2="16"></line>
+                        </svg>
+                        <span class="dock-btn-label">Open Visualizer</span>
+                    </button>
+                    <div class="dock-density-wrap" id="dock-density-wrap">
+                        <button class="dock-btn" type="button" id="btn-density-menu" title="Change Density" aria-haspopup="true"
+                            aria-expanded="false" aria-controls="dock-density-menu">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 6h16"></path>
+                                <path d="M4 12h12"></path>
+                                <path d="M4 18h8"></path>
+                            </svg>
+                            <span class="dock-btn-label">Change Density</span>
+                        </button>
+                        <div class="dock-density-menu hidden" id="dock-density-menu" role="menu" aria-label="Density options">
+                            <button class="dock-density-option" data-density-level="minimal" role="menuitem">Minimal</button>
+                            <button class="dock-density-option" data-density-level="adaptive" role="menuitem">Adaptive</button>
+                            <button class="dock-density-option" data-density-level="full" role="menuitem">Full</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="master-nav-group has-subnav" data-subnav="system">
+                <button class="dock-btn dock-category-btn" id="nav-category-system" type="button"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="subnav-system">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                    <span class="dock-btn-label">System</span>
+                </button>
+                <div class="master-subnav" id="subnav-system" role="menu" aria-label="System actions">
+                    <button class="dock-btn" type="button" data-action="openEditModal" data-action-args="'settings'" title="Open Settings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                            </path>
+                        </svg>
+                        <span class="dock-btn-label">Open Settings</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -1489,6 +1573,7 @@
     <script src="engine/Presets.js"></script>
     <script src="visual-synth.js"></script>
     <script src="js/ui-density-manager.js"></script>
+    <script src="feed-mode.js"></script>
     <script src="app.js"></script>
 </body>
 

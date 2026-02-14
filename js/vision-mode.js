@@ -179,6 +179,7 @@
                 status,
                 nextAction,
                 blocker: String(entry && entry.blocker || '').trim(),
+                notes: String(entry && entry.notes || '').trim(),
                 linkedProjectId: entry && entry.linkedProjectId ? entry.linkedProjectId : null,
                 createdAt: (entry && entry.createdAt) || timestamp,
                 updatedAt: (entry && entry.updatedAt) || timestamp
@@ -398,6 +399,7 @@
                     status,
                     nextAction: nextActionRaw,
                     blocker: String(payload && payload.blocker || '').trim(),
+                    notes: String(payload && payload.notes || '').trim(),
                     linkedProjectId: payload && payload.linkedProjectId || null
                 }));
             }).milestones;
@@ -432,6 +434,10 @@
 
                 if (Object.prototype.hasOwnProperty.call(updates, 'blocker')) {
                     milestone.blocker = String(updates.blocker || '').trim();
+                }
+
+                if (Object.prototype.hasOwnProperty.call(updates, 'notes')) {
+                    milestone.notes = String(updates.notes || '').trim();
                 }
 
                 if (Object.prototype.hasOwnProperty.call(updates, 'linkedProjectId')) {
@@ -1161,7 +1167,8 @@
                 nextAction: normalized.nextAction,
                 blocker: normalized.blocker,
                 date: normalized.date,
-                completionPct: completion
+                completionPct: completion,
+                notes: normalized.notes
             });
             return true;
         }

@@ -1,11 +1,11 @@
 /* ========================================
-   Mode Manager (Personal | Business | Vision | Ritual | Library)
+   Mode Manager (Personal | Business | Vision | Ritual | Feed | Library)
    ======================================== */
 
 var ModeManager = {
     KEY: 'lifeos-mode',
     DEFAULT: 'personal',
-    MODES: ['personal', 'business', 'vision', 'ritual', 'library'],
+    MODES: ['personal', 'business', 'vision', 'ritual', 'feed', 'library'],
 
     _normalizeMode(mode, fallback = 'personal') {
         const value = String(mode || '').trim().toLowerCase();
@@ -85,9 +85,9 @@ var ModeManager = {
             label.classList.toggle('active', mode === activeMode);
         });
 
-        const modeBar = document.querySelector('.mode-toggle-bar');
-        if (modeBar) {
-            modeBar.classList.toggle('single-mode', visibleCount <= 1);
+        const modeGroup = document.querySelector('.master-dock-modes') || document.querySelector('.mode-toggle-bar');
+        if (modeGroup) {
+            modeGroup.classList.toggle('single-mode', visibleCount <= 1);
         }
     },
 

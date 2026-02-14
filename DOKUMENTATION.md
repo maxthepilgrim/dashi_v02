@@ -13,6 +13,7 @@ Life Dashboard ist ein lokales, browserbasiertes "Life OS" mit mehreren Modi:
 - `business`: Geschaeftsmetriken und Hebelprojekte
 - `vision`: strategische Planung mit Compute-Engine
 - `ritual`: langsamer Tagesabschluss (Listening Room, Walk Log, Dankbarkeit)
+- `feed`: einheitlicher, filterbarer Verlauf ueber zentrale Ereignisquellen
 - `library`: Medienarchiv mit Suche/Filter/Import
 
 Die Anwendung arbeitet primar mit `localStorage` im Browser und benoetigt keinen Server fuer den Kernbetrieb.
@@ -23,9 +24,9 @@ Die Anwendung arbeitet primar mit `localStorage` im Browser und benoetigt keinen
 
 Modi koennen auf drei Arten gewechselt werden:
 
-- obere Mode-Leiste (Buttons `PERSONAL`, `BUSINESS`, `VISION`, `RITUAL`, `LIBRARY`)
+- obere Mode-Leiste (Buttons `PERSONAL`, `BUSINESS`, `VISION`, `RITUAL`, `FEED`, `LIBRARY`)
 - Taste `M` (zyklisches Durchschalten, ausser in aktiven Eingabefeldern)
-- URL-Parameter `?mode=<modus>` beim Laden (z. B. `?mode=vision`, nur wenn in Settings erlaubt)
+- URL-Parameter `?mode=<modus>` beim Laden (z. B. `?mode=feed`, nur wenn in Settings erlaubt; optional `?source=journal`)
 
 Startverhalten (Global Settings V1):
 
@@ -54,7 +55,7 @@ Die Einstellungen laufen seit V1 ueber einen zentralen Datensatz:
 - Bereiche:
   - Profile (`name`, `avatar`)
   - Startup (`policy`, `fixedMode`, `allowUrlOverride`, `lastMode`)
-  - Density pro Modus (`personal/business/vision/ritual/library`)
+  - Density pro Modus (`personal/business/vision/ritual/feed/library`)
   - Date & Time (`weekStartsOn`, `dateStyle`, `hourCycle`)
   - Accessibility (`reducedMotion`, `introAnimation`)
   - Visualizer (`normal` oder `pro`)
@@ -208,7 +209,22 @@ Ablauf:
 - Weekly Insights (Walks, Minuten, Durchschnitt, haeufigster Typ)
 - Log-Liste mit Eintraegen
 
-### 4.6 Library Mode
+### 4.6 Feed Mode
+
+Funktionen:
+
+- Vereinheitlichte Timeline fuer `journal`, `activity`, `walk`, `vision`-Entscheidungen, `library`-Neuzugaenge und `daily archive`
+- Standard-Sortierung `Smart` (deterministische Ranking-Formel), alternativ `Recent` (rein chronologisch)
+- Filterleiste mit Source-Chips, Zeitfenstern (`24h/7d/30d/all`) und Volltextsuche
+- Quick Actions: `New Journal`, `Log Activity`, `Open Vision`, `Open Ritual`, `Open Library`
+- Kartenaktionen: `Open Source`; `Delete` nur fuer loeschbare Quellen (`journal/activity/walk/library`)
+
+Navigation:
+
+- Journal-Verlaufspunkte im Dashboard und in der Command Palette oeffnen den Feed im Journal-Kontext
+- `journal.html` bleibt als Legacy-URL erhalten und leitet auf `index.html?mode=feed&source=journal` um
+
+### 4.7 Library Mode
 
 Funktionen:
 
@@ -274,13 +290,14 @@ Shortcuts im geoeffneten Pro-Synth:
 
 - `Zen Mode`: Fokus-Overlay + 25:00 Timer
 - `Candle Mode`: ruhiger Fullscreen-Zustand mit Quotes + 10-Minuten-Timer
-- Journal Feed (`journal.html`) mit Verlauf und Loeschfunktion
+- Feed-Mode als kanonische Verlaufsebene (`?mode=feed`, optional `&source=journal`)
+- `journal.html` als Kompatibilitaets-Redirect auf Feed-Mode
 - Dashboard PNG Export (`html2canvas`)
 - Density Menu:
   - `minimal`: nur priorisierte/critical Widgets
   - `adaptive`: alle sichtbar, weniger wichtige einklappen
   - `full`: volle Sicht
-  - Persistenz ist pro Modus getrennt (`personal/business/vision/ritual/library`)
+  - Persistenz ist pro Modus getrennt (`personal/business/vision/ritual/feed/library`)
 
 ## 7) Tastatur-Shortcuts (Cheat Sheet)
 
@@ -309,6 +326,7 @@ Shortcuts im geoeffneten Pro-Synth:
 - `store.js` - Datenmodell und Persistenzschicht (`localStorage`)
 - `mode.js` - Modusverwaltung
 - `js/vision-mode.js` + `js/vision-engine.js` - Vision State/Compute/UI
+- `feed-mode.js` - Feed Data Adapter, Ranking/Filter und Renderer
 - `library-mode.js` - Library Storage + Renderer + CSV Import
 - `walk-widget.js` - Walk Session UI + Timer + Logik
 - `js/listeningRoomWidget.js` - Listening Room Overlay + Shuffle + Vinyl Sync

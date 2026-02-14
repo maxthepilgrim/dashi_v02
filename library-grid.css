@@ -627,9 +627,12 @@ body.library-modal-open {
 .library-item-modal-card {
     position: relative;
     z-index: 1;
-    width: min(1020px, calc(100vw - 32px));
-    max-height: calc(100vh - 40px);
-    overflow: auto;
+    width: 70vw;
+    max-width: 70vw;
+    max-height: 82vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.16);
     background: linear-gradient(145deg, rgba(15, 27, 24, 0.95), rgba(10, 18, 16, 0.92));
@@ -656,6 +659,8 @@ body.library-modal-open {
     display: grid;
     grid-template-columns: 300px minmax(0, 1fr);
     gap: 20px;
+    min-height: 0;
+    overflow: auto;
 }
 
 .library-item-modal-cover-column {
@@ -978,8 +983,9 @@ body.library-modal-open {
     }
 
     .library-item-modal-card {
-        width: calc(100vw - 16px);
-        max-height: calc(100vh - 16px);
+        width: 70vw;
+        max-width: 70vw;
+        max-height: 82vh;
         padding: 14px;
     }
 

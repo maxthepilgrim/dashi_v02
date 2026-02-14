@@ -17,8 +17,9 @@ let ritualInitialized = false;
 let vinylSpotifySearchResults = [];
 let spotifyReturnContext = null;
 let globalSettingsModalState = null;
+let journalEntryEditModalState = null;
 
-const APP_MODES = ['personal', 'business', 'vision', 'ritual', 'library'];
+const APP_MODES = ['personal', 'business', 'vision', 'ritual', 'feed', 'library'];
 const APP_VERSION = 'v9.4';
 const APP_EDITION = 'AURORA';
 const APP_VERSION_LABEL = `${APP_VERSION} ${APP_EDITION}`;
@@ -215,7 +216,9 @@ window.handleVinylSpotifyAction = function handleVinylSpotifyAction(url) {
 };
 
 window.openJournalFeedAndCloseModal = function openJournalFeedAndCloseModal() {
-    if (typeof window.openJournalFeed === 'function') {
+    if (typeof window.openFeedMode === 'function') {
+        window.openFeedMode({ source: 'journal' });
+    } else if (typeof window.openJournalFeed === 'function') {
         window.openJournalFeed();
     }
     if (typeof window.closeModal === 'function') {
@@ -238,8 +241,8 @@ function getSettingsSnapshot() {
     return {
         profile: { name: 'Guest User', avatar: 'G' },
         startup: { policy: 'remember-last', fixedMode: 'personal', allowUrlOverride: true, lastMode: 'personal' },
-        modeVisibility: { personal: true, business: true, vision: true, ritual: true, library: true },
-        density: { personal: 'full', business: 'full', vision: 'full', ritual: 'full', library: 'full' },
+        modeVisibility: { personal: true, business: true, vision: true, ritual: true, feed: true, library: true },
+        density: { personal: 'full', business: 'full', vision: 'full', ritual: 'full', feed: 'full', library: 'full' },
         dateTime: { weekStartsOn: 'monday', dateStyle: 'system', hourCycle: 'system' },
         accessibility: { reducedMotion: false, introAnimation: 'once-per-session' },
         visualizer: { mode: 'pro' },
@@ -3279,8 +3282,8 @@ function openEditModal(type) {
             const settings = getSettingsSnapshot();
             const profile = settings.profile || Store.getProfile();
             const startup = settings.startup || { policy: 'remember-last', fixedMode: 'personal', allowUrlOverride: true, lastMode: 'personal' };
-            const modeVisibility = settings.modeVisibility || { personal: true, business: true, vision: true, ritual: true, library: true };
-            const density = settings.density || { personal: 'full', business: 'full', vision: 'full', ritual: 'full', library: 'full' };
+            const modeVisibility = settings.modeVisibility || { personal: true, business: true, vision: true, ritual: true, feed: true, library: true };
+            const density = settings.density || { personal: 'full', business: 'full', vision: 'full', ritual: 'full', feed: 'full', library: 'full' };
             const dateTime = settings.dateTime || { weekStartsOn: 'monday', dateStyle: 'system', hourCycle: 'system' };
             const accessibility = settings.accessibility || { reducedMotion: false, introAnimation: 'once-per-session' };
             const visualizerMode = settings.visualizer && settings.visualizer.mode ? settings.visualizer.mode : 'pro';
@@ -4608,6 +4611,203 @@ window.deleteWorld = function (idx) {
 };
 
 // --- Journal Helpers ---
+const JOURNAL_EDIT_MOOD_OPTIONS = ['Calm', 'Tense', 'Inspired', 'Neutral', 'Anxious', 'Flow'];
+const JOURNAL_EDIT_ENERGY_OPTIONS = ['Low', 'Medium', 'High'];
+
+function normalizeJournalLabels(value) {
+    const base = Array.isArray(value) ? value : String(value || '').split(',');
+    const unique = new Map();
+    base.forEach((raw) => {
+        const label = String(raw || '').trim();
+        if (!label) return;
+        const key = label.toLowerCase();
+        if (!unique.has(key)) unique.set(key, label);
+    });
+    return Array.from(unique.values());
+}
+
+window.closeJournalEntryEditModal = function () {
+    journalEntryEditModalState = null;
+    if (typeof window.closeModal === 'function') {
+        window.closeModal();
+    }
+};
+
+window.openJournalEntryEditModal = function (entryId, options) {
+    const id = String(entryId || '').trim();
+    if (!id) return;
+
+    const entries = Store.getJournalEntries();
+    const entry = entries.find((item) => String(item && item.id) === id);
+    if (!entry) return;
+
+    const opts = options && typeof options === 'object' ? options : {};
+    journalEntryEditModalState = {
+        entryId: id,
+        onSave: typeof opts.onSave === 'function' ? opts.onSave : null,
+        onDelete: typeof opts.onDelete === 'function' ? opts.onDelete : null
+    };
+
+    const body = $('#modal-body');
+    const overlay = $('#modal-overlay');
+    if (!body || !overlay) return;
+
+    const mood = String(entry.mood || '').trim();
+    const energy = String(entry.energy || '').trim();
+    const labels = normalizeJournalLabels(entry.labels || entry.tags || '');
+    const dateLabel = Number.isFinite(new Date(entry.date).getTime())
+        ? new Date(entry.date).toLocaleString()
+        : 'Unknown date';
+
+    const moodOptionsHtml = ['<option value="">None</option>']
+        .concat(JOURNAL_EDIT_MOOD_OPTIONS.map((option) => `<option value="${option}" ${mood === option ? 'selected' : ''}>${option}</option>`))
+        .join('');
+
+    const energyOptionsHtml = ['<option value="">None</option>']
+        .concat(JOURNAL_EDIT_ENERGY_OPTIONS.map((option) => `<option value="${option}" ${energy === option ? 'selected' : ''}>${option}</option>`))
+        .join('');
+
+    body.innerHTML = `
+        <div class="modal-form">
+            <h2>Edit Journal Entry</h2>
+            <div class="form-group">
+                <label>Created</label>
+                <input type="text" value="${escapeHtml(dateLabel)}" readonly>
+            </div>
+            <div class="form-group">
+                <label for="modal-journal-edit-text">Entry Text</label>
+                <textarea id="modal-journal-edit-text" rows="6" placeholder="Write your journal entry...">${escapeHtml(String(entry.text || ''))}</textarea>
+            </div>
+            <div class="modal-grid-two">
+                <div class="form-group">
+                    <label for="modal-journal-edit-mood">Mood</label>
+                    <select id="modal-journal-edit-mood">${moodOptionsHtml}</select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-edit-energy">Energy</label>
+                    <select id="modal-journal-edit-energy">${energyOptionsHtml}</select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="modal-journal-edit-labels">Labels</label>
+                <input id="modal-journal-edit-labels" type="text" value="${escapeHtml(labels.join(', '))}" placeholder="focus, gratitude, love">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary ui-btn ui-btn--secondary" data-action="deleteJournalEntryFromEditModal" data-action-args="'${escapeHtml(id)}'">Delete</button>
+                <button class="btn-secondary ui-btn ui-btn--secondary" data-action="closeJournalEntryEditModal" data-action-args="">Cancel</button>
+                <button class="btn-primary ui-btn ui-btn--primary" data-action="saveJournalEntryFromEditModal" data-action-args="'${escapeHtml(id)}'">Save</button>
+            </div>
+        </div>
+    `;
+    overlay.setAttribute('data-type', 'journalEntryEdit');
+    overlay.classList.add('active');
+
+    const textInput = document.getElementById('modal-journal-edit-text');
+    if (textInput) textInput.focus();
+};
+
+window.saveJournalEntryFromEditModal = function (entryId) {
+    const id = String(entryId || (journalEntryEditModalState && journalEntryEditModalState.entryId) || '').trim();
+    if (!id) return;
+
+    const textInput = document.getElementById('modal-journal-edit-text');
+    const moodInput = document.getElementById('modal-journal-edit-mood');
+    const energyInput = document.getElementById('modal-journal-edit-energy');
+    const labelsInput = document.getElementById('modal-journal-edit-labels');
+    const nextText = String(textInput ? textInput.value : '').trim();
+
+    if (!nextText) {
+        if (textInput) textInput.focus();
+        return;
+    }
+
+    const entries = Store.getJournalEntries();
+    const idx = entries.findIndex((entry) => String(entry && entry.id) === id);
+    if (idx < 0) return;
+
+    const nextMood = String(moodInput ? moodInput.value : '').trim();
+    const nextEnergy = String(energyInput ? energyInput.value : '').trim();
+    const nextLabels = normalizeJournalLabels(labelsInput ? labelsInput.value : '');
+
+    entries[idx] = {
+        ...entries[idx],
+        text: nextText,
+        mood: nextMood || null,
+        energy: nextEnergy || null,
+        labels: nextLabels,
+        tags: nextLabels
+    };
+
+    Store.saveJournalEntries(entries);
+    if (typeof window.renderJournalFeed === 'function') {
+        window.renderJournalFeed();
+    }
+
+    const onSave = journalEntryEditModalState && journalEntryEditModalState.onSave;
+    if (typeof onSave === 'function') onSave(entries[idx]);
+
+    window.closeJournalEntryEditModal();
+};
+
+window.deleteJournalEntryFromEditModal = function (entryId) {
+    const id = String(entryId || (journalEntryEditModalState && journalEntryEditModalState.entryId) || '').trim();
+    if (!id) return;
+    if (!window.confirm('Delete this journal entry?')) return;
+
+    Store.deleteJournalEntry(id);
+    if (typeof window.renderJournalFeed === 'function') {
+        window.renderJournalFeed();
+    }
+
+    const onDelete = journalEntryEditModalState && journalEntryEditModalState.onDelete;
+    if (typeof onDelete === 'function') onDelete(id);
+
+    window.closeJournalEntryEditModal();
+};
+
+window.openJournalLogPage = function () {
+    if (typeof window.openFeedMode === 'function') {
+        window.openFeedMode({ source: 'journal' });
+        return;
+    }
+    window.location.href = 'index.html?mode=feed&source=journal';
+};
+
+window.openJournalQuickEntryModal = function () {
+    const body = $('#modal-body');
+    const overlay = $('#modal-overlay');
+    if (!body || !overlay) return;
+
+    body.innerHTML = `
+        <div class="modal-form">
+            <h2>Quick Journal Entry</h2>
+            <div class="form-group">
+                <label for="modal-journal-quick-text">What's on your mind?</label>
+                <textarea id="modal-journal-quick-text" placeholder="Write one quick log entry..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary ui-btn ui-btn--secondary" data-action="openJournalLogPage" data-action-args="">View Log</button>
+                <button class="btn-secondary ui-btn ui-btn--secondary" data-action="closeModal" data-action-args="">Cancel</button>
+                <button class="btn-primary ui-btn ui-btn--primary" data-action="saveJournalQuickEntry" data-action-args="">Save Entry</button>
+            </div>
+        </div>
+    `;
+    overlay.setAttribute('data-type', 'journalQuickEntry');
+    overlay.classList.add('active');
+    const quickInput = document.getElementById('modal-journal-quick-text');
+    if (quickInput) quickInput.focus();
+};
+
+window.saveJournalQuickEntry = function () {
+    const input = document.getElementById('modal-journal-quick-text');
+    const text = String(input ? input.value : '').trim();
+    if (!text) return;
+    Store.addJournalEntry(text);
+    if (typeof window.closeModal === 'function') {
+        window.closeModal();
+    }
+};
+
 window.openJournalFeed = function () {
     const entries = Store.getJournalEntries();
     const body = $('#modal-body');
@@ -4917,6 +5117,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.LibraryRenderer.init();
         window.LibraryRenderer.render();
     }
+    if (window.FeedRenderer && typeof window.FeedRenderer.init === 'function') {
+        window.FeedRenderer.init();
+        window.FeedRenderer.render();
+    }
     initQuickCapture();
     // renderRituals(); // Merged into renderDailyRhythm
 
@@ -4938,6 +5142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initDragging();
     initModal();
     initVisualControls();
+    initMasterDockSubnav();
     initDensityDockMenu();
     initZenMode();
     initSmartDock();
@@ -4968,6 +5173,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.LibraryRenderer && typeof window.LibraryRenderer.refresh === 'function') {
                 window.LibraryRenderer.refresh();
             }
+        } else if (e.detail.mode === 'feed') {
+            if (window.FeedRenderer && typeof window.FeedRenderer.refresh === 'function') {
+                window.FeedRenderer.refresh();
+            }
         }
         scheduleLiveSystemRefresh();
     });
@@ -4990,6 +5199,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentMode === 'library') {
         if (window.LibraryRenderer && typeof window.LibraryRenderer.refresh === 'function') {
             window.LibraryRenderer.refresh();
+        }
+    }
+    if (currentMode === 'feed') {
+        if (window.FeedRenderer && typeof window.FeedRenderer.refresh === 'function') {
+            window.FeedRenderer.refresh();
         }
     }
 
@@ -5848,6 +6062,144 @@ function initZenMode() {
     }
 }
 
+function initMasterDockSubnav() {
+    const dock = $('#global-controls');
+    if (!dock) return;
+    if (dock.dataset.subnavBound === '1') return;
+    dock.dataset.subnavBound = '1';
+
+    const groups = Array.from(dock.querySelectorAll('.master-nav-group.has-subnav'));
+    if (!groups.length) return;
+
+    const desktopQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const isDesktopPointer = () => desktopQuery.matches;
+    const closeTimers = new WeakMap();
+
+    function getGroupControl(group) {
+        return group.querySelector('.dock-category-btn');
+    }
+
+    function closeGroup(group) {
+        const control = getGroupControl(group);
+        group.classList.remove('subnav-open');
+        if (control) control.setAttribute('aria-expanded', 'false');
+    }
+
+    function clearScheduledClose(group) {
+        const timerId = closeTimers.get(group);
+        if (timerId) {
+            window.clearTimeout(timerId);
+            closeTimers.delete(group);
+        }
+    }
+
+    function scheduleClose(group) {
+        clearScheduledClose(group);
+        const timerId = window.setTimeout(() => {
+            // Keep submenu open if pointer came back onto trigger/subnav quickly.
+            if (group.matches(':hover')) return;
+            closeGroup(group);
+        }, 180);
+        closeTimers.set(group, timerId);
+    }
+
+    function clampSubnavToViewport(group) {
+        const subnav = group.querySelector('.master-subnav');
+        if (!subnav) return;
+
+        subnav.classList.remove('align-right');
+        const rect = subnav.getBoundingClientRect();
+        const viewportPadding = 8;
+
+        if (rect.right > (window.innerWidth - viewportPadding)) {
+            subnav.classList.add('align-right');
+        }
+    }
+
+    function openGroup(group) {
+        clearScheduledClose(group);
+        groups.forEach((candidate) => {
+            if (candidate !== group) closeGroup(candidate);
+        });
+        const control = getGroupControl(group);
+        group.classList.add('subnav-open');
+        if (control) control.setAttribute('aria-expanded', 'true');
+        window.requestAnimationFrame(() => clampSubnavToViewport(group));
+    }
+
+    function closeAll() {
+        groups.forEach(closeGroup);
+    }
+
+    groups.forEach((group) => {
+        const control = getGroupControl(group);
+        const subnav = group.querySelector('.master-subnav');
+        if (!control || !subnav) return;
+
+        control.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (group.classList.contains('subnav-open')) {
+                closeGroup(group);
+                return;
+            }
+            openGroup(group);
+        });
+
+        control.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if (key !== 'Enter' && key !== ' ' && key !== 'ArrowDown') return;
+            event.preventDefault();
+            openGroup(group);
+            const firstAction = subnav.querySelector('button, [role="menuitem"], a');
+            if (firstAction && typeof firstAction.focus === 'function') {
+                firstAction.focus();
+            }
+        });
+
+        group.addEventListener('mouseenter', () => {
+            if (!isDesktopPointer()) return;
+            clearScheduledClose(group);
+            openGroup(group);
+        });
+
+        group.addEventListener('mouseleave', () => {
+            if (!isDesktopPointer()) return;
+            scheduleClose(group);
+        });
+    });
+
+    dock.addEventListener('click', (event) => {
+        const actionEl = event.target.closest('.master-subnav .dock-btn, .master-subnav .mode-btn-switch, .master-subnav .dock-density-option');
+        if (!actionEl) return;
+        const keepOpen = actionEl.id === 'btn-density-menu';
+        if (keepOpen) return;
+        window.setTimeout(() => {
+            if (actionEl.closest('#dock-density-wrap') && !actionEl.classList.contains('dock-density-option')) return;
+            closeAll();
+        }, 0);
+    });
+
+    document.addEventListener('click', (event) => {
+        if (dock.contains(event.target)) return;
+        closeAll();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        closeAll();
+    });
+
+    window.addEventListener('resize', () => {
+        if (isDesktopPointer()) {
+            const openGroupEl = groups.find((group) => group.classList.contains('subnav-open'));
+            if (openGroupEl) clampSubnavToViewport(openGroupEl);
+            return;
+        }
+        closeAll();
+    });
+}
+
 function initDensityDockMenu() {
     const toggleBtn = $('#btn-density-menu');
     const menu = $('#dock-density-menu');
@@ -5930,26 +6282,7 @@ function initDensityDockMenu() {
 function initSmartDock() {
     const dock = $('.command-dock-bar');
     if (!dock) return;
-
-    let lastScrollY = window.scrollY;
-
-    window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
-        if (currentScrollY < 100) {
-            dock.classList.add('visible');
-        } else {
-            if (Math.abs(currentScrollY - lastScrollY) < 15) return;
-            if (currentScrollY < lastScrollY) {
-                dock.classList.add('visible');
-            } else {
-                dock.classList.remove('visible');
-            }
-        }
-        lastScrollY = currentScrollY;
-    }, { passive: true });
-
-    // Initial state
-    if (window.scrollY < 100) dock.classList.add('visible');
+    dock.classList.add('visible');
 }
 
 
@@ -6145,14 +6478,14 @@ function calculateDailyPulse() {
    V08 — Command Palette
    ======================================== */
 const paletteActions = [
-    { id: 'zen', name: 'Toggle Zen Mode', icon: '🧘', action: () => { document.getElementById('btn-zen-mode').click(); } },
+    { id: 'zen', name: 'Toggle Focus Mode', icon: '🧘', action: () => { document.getElementById('btn-zen-mode').click(); } },
     { id: 'timer', name: 'Start/Stop Focus Timer', icon: '🕐', action: toggleFocusTimer },
-    { id: 'journal', name: 'New Journal Entry', icon: '📝', action: () => { document.getElementById('journal-area').focus(); } },
-    { id: 'feed', name: 'Open Journal Feed', icon: '📖', action: openJournalFeed },
+    { id: 'journal', name: 'Write Journal', icon: '📝', action: () => { document.getElementById('journal-area').focus(); } },
+    { id: 'feed', name: 'Open Timeline (Journal)', icon: '📖', action: () => openFeedMode({ source: 'journal' }) },
     { id: 'income', name: 'Add Income', icon: '💰', action: () => openEditModal('income') },
     { id: 'habit', name: 'Edit Habits', icon: '✅', action: () => openEditModal('habitsRituals') },
     { id: 'theme', name: 'Open Visualizer', icon: '', action: () => { document.getElementById('btn-visual-config').click(); } },
-    { id: 'settings', name: 'Settings', icon: '⚙️', action: () => openEditModal('settings') },
+    { id: 'settings', name: 'Open Settings', icon: '⚙️', action: () => openEditModal('settings') },
 ];
 
 function initCommandPalette() {

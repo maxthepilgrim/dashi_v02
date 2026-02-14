@@ -421,13 +421,13 @@
                 '    </select>',
                 '  </div>',
                 '  <div class="library-action-row">',
-                '    <button id="library-add-toggle" class="library-add-btn" type="button">+ Add Item</button>',
-                '    <button id="library-settings-toggle" class="library-add-btn" type="button">Library Settings</button>',
+                '    <button id="library-add-toggle" class="library-add-btn" type="button">Add Item</button>',
+                '    <button id="library-settings-toggle" class="library-add-btn" type="button">Open Library Settings</button>',
                 '  </div>',
                 '</section>',
                 '<section class="library-add-panel" id="library-add-panel" hidden>',
                 '  <div class="library-add-header">',
-                '    <h2 class="library-add-title">Add New Item</h2>',
+                '    <h2 class="library-add-title">Add Item</h2>',
                 '    <p class="library-add-help">Required: title. Optional: creator, type, year, cover URL, tags, notes.</p>',
                 '  </div>',
                 '  <p id="library-add-error" class="library-add-error" hidden></p>',
@@ -806,7 +806,7 @@
             const toggle = document.getElementById('library-add-toggle');
             this._addFormVisible = Boolean(visible);
             if (panel) panel.hidden = !this._addFormVisible;
-            if (toggle) toggle.textContent = this._addFormVisible ? 'Close' : '+ Add Item';
+            if (toggle) toggle.textContent = this._addFormVisible ? 'Close' : 'Add Item';
             if (!this._addFormVisible) this._setAddError('');
         },
 
@@ -815,7 +815,7 @@
             const toggle = document.getElementById('library-settings-toggle');
             this._settingsVisible = Boolean(visible);
             if (panel) panel.hidden = !this._settingsVisible;
-            if (toggle) toggle.textContent = this._settingsVisible ? 'Close Settings' : 'Library Settings';
+            if (toggle) toggle.textContent = this._settingsVisible ? 'Close Settings' : 'Open Library Settings';
             if (this._settingsVisible) this._hydrateSettingsForm();
         },
 

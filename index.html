@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Life OS v9.4 — Aurora Edition. Your personal strategic life dashboard.">
+    <title>Life OS v9.4 — Aurora Edition</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="visual-synth.css">
+    <link rel="stylesheet" href="library-grid.css">
+    <link rel="stylesheet" href="listeningRoomWidget.css">
+    <link rel="stylesheet" href="walk-widget.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+    <script>
+        (function () {
+            try {
+                var reducedMotion = false;
+                var introDisabled = false;
+                var rawSettings = localStorage.getItem('lifeos-settings-v1');
+                if (rawSettings) {
+                    var parsed = JSON.parse(rawSettings);
+                    var accessibility = parsed && parsed.accessibility ? parsed.accessibility : {};
+                    reducedMotion = Boolean(accessibility.reducedMotion);
+                    introDisabled = accessibility.introAnimation === 'disabled';
+                }
+
+                if (reducedMotion) {
+                    document.documentElement.classList.add('settings-reduced-motion');
+                }
+                if (introDisabled || reducedMotion) {
+                    document.documentElement.classList.add('settings-intro-disabled');
+                }
+
+                if (!sessionStorage.getItem('lifeOS_intro_shown') && !reducedMotion && !introDisabled) {
+                    document.documentElement.classList.add('run-intro');
+                }
+            } catch (e) { console.error('Intro check failed', e); }
+        })();
+    </script>
+</head>
+
+<body>
+
+
+    <div class="visual-synth-stage" id="visual-synth-stage" aria-hidden="true">
+        <canvas class="visual-synth-canvas" id="visual-synth-canvas"></canvas>
+    </div>
+
+    <div class="visual-synth-overlay" id="visual-synth-overlay" aria-label="Aurora Visual Synth">
+        <div class="visual-synth-frame">
+            <div class="visual-synth-topbar">
+                <div class="visual-synth-title">AURORA VISUAL SYNTH</div>
+                <div class="visual-synth-top-actions">
+                    <button class="vs-btn" id="vs-btn-presets" type="button">Presets</button>
+                    <button class="vs-btn" id="vs-btn-randomize" type="button">Randomize</button>
+                    <button class="vs-btn" id="vs-btn-reset" type="button">Reset</button>
+                    <button class="vs-btn" id="vs-btn-export" type="button">Export</button>
+                    <button class="vs-btn" id="vs-btn-import" type="button">Import</button>
+                    <button class="vs-btn-icon" id="vs-btn-close" type="button" aria-label="Close synth">&times;</button>
+                </div>
+                <div class="visual-synth-top-status">
+                    <span class="vs-status-pill" id="vs-status-fps">FPS --</span>
+                    <span class="vs-status-pill" id="vs-status-nodes">NODES --</span>
+                    <span class="vs-status-pill" id="vs-status-render">RENDER --</span>
+                </div>
+            </div>
+
+            <div class="visual-synth-mobile-tabs">
+                <button class="vs-tab active" data-tab="modules" type="button">Modules</button>
+                <button class="vs-tab" data-tab="sequencer" type="button">Sequencer</button>
+                <button class="vs-tab" data-tab="presets" type="button">Presets</button>
+            </div>
+
+            <div class="visual-synth-body">
+                <section class="visual-synth-panel modules" id="vs-panel-modules">
+                    <div class="visual-synth-module-rack" id="vs-module-rack"></div>
+                </section>
+
+                <section class="visual-synth-panel sequencer" id="vs-panel-sequencer">
+                    <div class="vs-right-stack">
+                        <div class="vs-card" id="vs-transport-card" data-mobile-group="sequencer">
+                            <div class="vs-card-title">Transport + Quality</div>
+                            <div class="vs-transport-grid">
+                                <button class="vs-btn is-primary" id="vs-play-toggle" type="button">Play</button>
+                                <label class="vs-field">
+                                    <span>BPM</span>
+                                    <input class="vs-range" id="vs-bpm" type="range" min="20" max="240" step="1">
+                                </label>
+                                <label class="vs-field">
+                                    <span>Swing</span>
+                                    <input class="vs-range" id="vs-swing" type="range" min="0" max="60" step="1">
+                                </label>
+                                <label class="vs-field">
+                                    <span>Steps</span>
+                                    <select class="vs-select" id="vs-step-length">
+                                        <option value="8">8</option>
+                                        <option value="16">16</option>
+                                        <option value="32">32</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="vs-transport-grid" style="margin-top:8px">
+                                <label class="vs-field">
+                                    <span>Quality</span>
+                                    <select class="vs-select" id="vs-quality">
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </label>
+                                <label class="vs-field">
+                                    <span>Auto</span>
+                                    <input id="vs-auto-quality" type="checkbox" checked>
+                                </label>
+                            </div>
+                            <div class="vs-pattern-row">
+                                <input class="vs-input" id="vs-pattern-name" type="text" placeholder="Pattern name">
+                                <button class="vs-btn" id="vs-pattern-save" type="button">Save Pattern</button>
+                                <button class="vs-btn" id="vs-pattern-load" type="button">Load Pattern</button>
+                                <select class="vs-select" id="vs-pattern-select"></select>
+                            </div>
+                        </div>
+
+                        <div class="vs-card" id="vs-lfo-card" data-mobile-group="sequencer">
+                            <div class="vs-card-title">LFO Modulator</div>
+                            <div class="vs-transport-grid">
+                                <label class="vs-field">
+                                    <span>Shape</span>
+                                    <select class="vs-select" id="vs-lfo-shape">
+                                        <option value="sine">Sine</option>
+                                        <option value="triangle">Triangle</option>
+                                        <option value="square">Square</option>
+                                        <option value="random">Random</option>
+                                    </select>
+                                </label>
+                                <label class="vs-field">
+                                    <span>Rate (Hz)</span>
+                                    <input class="vs-number" id="vs-lfo-rate" type="number" min="0.01" max="10" step="0.01">
+                                </label>
+                                <label class="vs-field">
+                                    <span>Depth</span>
+                                    <input class="vs-range" id="vs-lfo-depth" type="range" min="0" max="1" step="0.01">
+                                </label>
+                                <label class="vs-field">
+                                    <span>Phase</span>
+                                    <input class="vs-range" id="vs-lfo-phase" type="range" min="0" max="1" step="0.01">
+                                </label>
+                            </div>
+                            <label class="vs-field" style="margin-top:8px">
+                                <span>Offset</span>
+                                <input class="vs-range" id="vs-lfo-offset" type="range" min="-1" max="1" step="0.01">
+                            </label>
+                        </div>
+
+                        <div class="vs-card" id="vs-sequencer-card" data-mobile-group="sequencer">
+                            <div class="vs-card-title">Step Sequencer</div>
+                            <div class="vs-lanes" id="vs-lanes"></div>
+                        </div>
+
+                        <div class="vs-card" id="vs-macro-card" data-mobile-group="sequencer">
+                            <div class="vs-card-title">Macro Bank</div>
+                            <div id="vs-macros"></div>
+                        </div>
+
+                        <div class="vs-card" id="vs-panel-presets" data-mobile-group="presets" hidden>
+                            <div class="vs-card-title">Preset Bank</div>
+                            <label class="vs-field">
+                                <span>Preset</span>
+                                <select class="vs-select" id="vs-preset-select"></select>
+                            </label>
+                            <div class="vs-control-row" style="margin-top:8px">
+                                <button class="vs-btn" id="vs-preset-load" type="button">Load</button>
+                                <button class="vs-btn" id="vs-preset-delete" type="button">Delete</button>
+                            </div>
+                            <label class="vs-field" style="margin-top:8px">
+                                <span>Save Name</span>
+                                <input class="vs-input" id="vs-preset-name" type="text" placeholder="New preset">
+                            </label>
+                            <div class="vs-control-row" style="margin-top:8px">
+                                <label class="vs-field" style="display:flex; align-items:center; gap:8px">
+                                    <span>Include Seq</span>
+                                    <input id="vs-preset-include-seq" type="checkbox" checked>
+                                </label>
+                                <button class="vs-btn is-primary" id="vs-preset-save" type="button">Save Preset</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        <input id="vs-import-input" type="file" hidden accept=".json,application/json">
+    </div>
+
+    <div class="visual-mixer" id="visual-popup" aria-label="Aurora Atmosphere Mixer" aria-hidden="true">
+        <div class="mixer-inner">
+            <button class="visual-popup-close" id="vs-close" type="button" aria-label="Close atmosphere mixer">&times;</button>
+            <div class="mixer-header">
+                <div class="mixer-title">AURORA ATMOSPHERE MIXER</div>
+            </div>
+            <div class="mixer-channels">
+                <div class="mixer-channel">
+                    <label for="vs-hue">Hue</label>
+                    <div class="fader-track"><input id="vs-hue" type="range" min="-180" max="180" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-brightness">Brightness</label>
+                    <div class="fader-track"><input id="vs-brightness" type="range" min="30" max="150" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-saturation">Saturation</label>
+                    <div class="fader-track"><input id="vs-saturation" type="range" min="40" max="180" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-grain">Grain</label>
+                    <div class="fader-track"><input id="vs-grain" type="range" min="0" max="100" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-speed">Speed</label>
+                    <div class="fader-track"><input id="vs-speed" type="range" min="0" max="100" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-temperature">Temp</label>
+                    <div class="fader-track"><input id="vs-temperature" type="range" min="-100" max="100" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-contrast">Contrast</label>
+                    <div class="fader-track"><input id="vs-contrast" type="range" min="0" max="100" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-calmness">Calmness</label>
+                    <div class="fader-track"><input id="vs-calmness" type="range" min="0" max="100" step="1"></div>
+                </div>
+                <div class="mixer-channel">
+                    <label for="vs-accent-hue">Accent</label>
+                    <div class="fader-track"><input id="vs-accent-hue" type="range" min="-180" max="180" step="1"></div>
+                </div>
+                <div class="mixer-master">
+                    <button class="btn-reset-visual" id="vs-reset" type="button">Reset</button>
+                    <hr class="v-divider">
+                    <div class="v-toggle-group">
+                        <label for="vs-time-sync">Time Sync</label>
+                        <label class="toggle-switch">
+                            <input id="vs-time-sync" type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="vignette-overlay" aria-hidden="true"></div>
+
+    <!-- Mode Toggle Bar -->
+    <div class="mode-toggle-bar">
+        <div class="mode-toggle-pill" id="mode-toggle-btn">
+            <button class="mode-btn-switch active" id="mode-label-personal" data-action="ModeManager.switchMode" data-action-args="'personal'"
+                title="Personal Mode">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>PERSONAL</span>
+            </button>
+            <button class="mode-btn-switch" id="mode-label-business" data-action="ModeManager.switchMode" data-action-args="'business'"
+                title="Business Mode">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+                <span>BUSINESS</span>
+            </button>
+            <button class="mode-btn-switch" id="mode-label-vision" data-action="ModeManager.switchMode" data-action-args="'vision'"
+                title="Vision Mode">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="3" />
+                    <line x1="12" y1="2" x2="12" y2="6" />
+                    <line x1="12" y1="18" x2="12" y2="22" />
+                </svg>
+                <span>VISION</span>
+            </button>
+            <button class="mode-btn-switch" id="mode-label-ritual" data-action="ModeManager.switchMode" data-action-args="'ritual'"
+                title="Ritual Mode">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+                <span>RITUAL</span>
+            </button>
+            <button class="mode-btn-switch" id="mode-label-library" data-action="ModeManager.switchMode" data-action-args="'library'"
+                title="Library Mode">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span>LIBRARY</span>
+            </button>
+        </div>
+    </div>
+
+    <main class="dashboard" id="dashboard">
+
+        <!-- COLUMN 1: LEFT (Personal Journal, Finance, Logs) -->
+        <div class="col-left">
+            <!-- 4. Journal (MOVED TO TOP) -->
+            <section class="widget ui-card glass widget-journal" id="journal-widget" data-mode="personal"
+                style="animation-delay:0.1s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="journal" title="Edit Widget">✎</button>
+                <div class="journal-header">
+                    <div class="widget-title ui-title">Quick Journal</div>
+                    <a href="#" data-action="openJournalFeed" data-action-args="" class="view-feed-link">View Feed &rarr;</a>
+                </div>
+                <textarea id="journal-area" placeholder="What's on your mind today? (Press Enter to save)"></textarea>
+            </section>
+
+            <!-- 2. Fitness (Activity Log) -->
+            <section class="widget ui-card glass widget-activity" id="sport-widget" data-mode="personal"
+                style="animation-delay:0.15s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="sport" title="Edit Activity Log">✎</button>
+                <div class="widget-title ui-title">Activity Log</div>
+                <div id="activity-list" class="activity-list"
+                    style="margin-top:15px; max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:8px">
+                </div>
+            </section>
+
+            <!-- 8. People & Relationships -->
+            <section class="widget ui-card glass widget-people" id="people-widget" data-mode="personal"
+                style="animation-delay:0.2s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="people" title="Edit Widget">✎</button>
+                <div class="widget-title ui-title">People & Relationships</div>
+                <div class="people-list" id="people-list"></div>
+            </section>
+
+            <!-- FINANCE (Moved to bottom of Left Col) -->
+            <!-- 1. Unified Finance Overview -->
+            <section class="widget ui-card glass widget-finance-overview" id="finance-overview" data-mode="personal"
+                style="animation-delay:0.3s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="financeOverview" title="Edit Widget">✎</button>
+                <div class="widget-title ui-title">Financial Overview</div>
+
+                <div class="finance-balance-row">
+                    <div class="finance-balance-label">Projected Balance</div>
+                    <div class="finance-balance-value" id="fo-balance">€0.00</div>
+                    <div class="finance-flow">
+                        <span id="fo-runway-status" class="runway-status"></span>
+                    </div>
+                </div>
+
+                <div class="finance-stats-grid">
+                    <div class="finance-stat">
+                        <div class="finance-stat-label">Real Balance</div>
+                        <div class="finance-stat-value" id="fo-real-balance">€0</div>
+                    </div>
+                    <div class="finance-stat">
+                        <div class="finance-stat-label">Pipeline</div>
+                        <div class="finance-stat-value" id="fo-pipeline">€0</div>
+                    </div>
+                    <div class="finance-stat">
+                        <div class="finance-stat-label">Runway</div>
+                        <div class="finance-stat-value" id="fo-runway">0 mo</div>
+                    </div>
+                    <div class="finance-stat">
+                        <div class="finance-stat-label">Debt</div>
+                        <div class="finance-stat-value" id="fo-debt">€0</div>
+                    </div>
+                </div>
+
+                <div class="pipeline-section"
+                    style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+                        <div class="widget-section-title" style="font-size:0.75rem; color:var(--text-tertiary);">INCOME
+                            PIPELINE</div>
+                        <button class="btn-add-item" data-action="openEditModal" data-action-args="'income'">+</button>
+                    </div>
+                    <div id="pipeline-list" class="pipeline-list"></div>
+                </div>
+            </section>
+
+            <!-- Biz: Financial Intelligence -->
+            <section class="widget ui-card glass widget-biz-finance" id="biz-finance-widget" data-mode="business"
+                style="animation-delay:0.35s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="bizFinance" title="Edit Financial Intelligence">✎</button>
+                <div class="widget-title ui-title">Financial Intelligence</div>
+                <div class="biz-stat-grid">
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">90-Day Cash</div>
+                        <div class="biz-stat-value" id="biz-90d-cash">€0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Monthly Burn</div>
+                        <div class="biz-stat-value" id="biz-burn">€0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Break-Even</div>
+                        <div class="biz-stat-value" id="biz-breakeven">€0/mo</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Runway</div>
+                        <div class="biz-stat-value" id="biz-runway">—</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Biz: Revenue Engine -->
+            <section class="widget ui-card glass widget-revenue" id="revenue-engine" data-mode="business"
+                style="animation-delay:0.4s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="revenueEngine" title="Edit Revenue Engine">✎</button>
+                <div class="widget-title ui-title">Revenue Engine</div>
+                <div class="biz-stat-grid">
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Generated Today</div>
+                        <div class="biz-stat-value" id="biz-rev-today">€0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Pipeline Created</div>
+                        <div class="biz-stat-value" id="biz-pipeline-today">€0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Invoices Sent</div>
+                        <div class="biz-stat-value" id="biz-invoices-sent">0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Deals Moved</div>
+                        <div class="biz-stat-value" id="biz-deals-moved">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Biz: Creative Output -->
+            <section class="widget ui-card glass widget-biz-content" id="biz-content-widget" data-mode="business"
+                style="animation-delay:0.45s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="bizContent" title="Edit Creative Output">✎</button>
+                <div class="widget-title ui-title">Creative Output</div>
+                <div class="biz-stat-grid">
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Minutes Created</div>
+                        <div class="biz-stat-value" id="biz-minutes-created">0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Pieces Finished</div>
+                        <div class="biz-stat-value" id="biz-pieces-finished">0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Audience Growth</div>
+                        <div class="biz-stat-value" id="biz-audience-growth">+0</div>
+                    </div>
+                    <div class="biz-stat">
+                        <div class="biz-stat-label">Stage</div>
+                        <div class="biz-stat-value biz-stat-text" id="biz-content-stage">—</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- COLUMN 2: CENTER (Focus, Topbar, Goals) -->
+        <div class="col-center">
+            <!-- Good Afternoon Topbar -->
+            <header class="widget ui-card glass widget-topbar" id="topbar" data-mode="shared" style="animation-delay:0.1s">
+                <div class="topbar-date">
+                    <span class="day-name" id="day-name"></span> <span id="full-date"></span>
+                    <span class="season-tag" id="topbar-season"></span>
+                    <span class="version-tag">v9.4
+                        AURORA</span>
+                </div>
+                <div class="greeting-center">
+                    <div class="greeting-text" id="greeting-text">HI, MAX</div>
+                    <div class="greeting-intention" id="greeting-intention">Slow, clear, consistent.</div>
+                </div>
+            </header>
+
+            <!-- 5.1 Creative Pulse (Unified with Focus Timer) -->
+            <section class="widget ui-card glass widget-creative-pulse" id="creative-pulse" data-mode="shared"
+                style="animation-delay:0.15s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="creativePulse" title="Edit Widget">✎</button>
+                <div class="pulse-header">
+                    <div class="widget-title ui-title">Focus Engine</div>
+                    <div class="pulse-actions">
+                        <button class="btn-roll-compass" data-action="rollCompass" data-action-args="" title="Roll the Dice">🎲</button>
+                        <button class="btn-compass-history" data-action="openDirectionLog" data-action-args="" title="Direction Log">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Focus Engine (Reimagined Creative Compass) -->
+                <div id="creative-compass-container" class="creative-compass-content">
+                    <div class="compass-focus-card">
+                        <div class="focus-label">Strategic Focus</div>
+                        <div class="focus-project-name" id="compass-suggestion-name">Loading...</div>
+                        <div class="focus-reason" id="compass-suggestion-reason">Determining next step...</div>
+
+                        <!-- Mission Context -->
+                        <div class="focus-mission-context" id="focus-mission-context">
+                            <span>🌿</span> <span id="mission-text">Stabilize current systems</span>
+                        </div>
+
+                        <!-- Momentum Tracker -->
+                        <div class="momentum-tracker">
+                            <div class="momentum-label">
+                                <span>Momentum</span>
+                                <span id="momentum-pct">0%</span>
+                            </div>
+                            <div class="momentum-bar">
+                                <div class="momentum-fill" id="momentum-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Check-in Overlay (Hidden if already done) -->
+                        <div class="check-in-overlay hidden" id="compass-check-in">
+                            <button data-action="compassCheckIn" data-action-args="'yes'">Deep Flow</button>
+                            <button data-action="compassCheckIn" data-action-args="'little'">Bit of Progress</button>
+                            <button data-action="compassCheckIn" data-action-args="'no'">Stalled</button>
+                        </div>
+                    </div>
+
+                    <div class="compass-worlds-cloud" id="compass-projects">
+                        <!-- Project Worlds as Tags -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4.1 North Star Card -->
+            <section class="widget ui-card glass widget-northstar" id="north-star" data-mode="shared"
+                style="animation-delay:0.2s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="northStar" title="Edit Widget">✎</button>
+                <div class="northstar-header">
+                    <span class="northstar-month" id="ns-month" data-action="openEditModal" data-action-args="'northStar'"
+                        style="cursor:pointer">February Focus</span>
+                    <span class="northstar-focus" id="ns-focus">Stabilize income & build MM archive</span>
+                </div>
+                <div class="northstar-priorities" id="ns-priorities">
+                    <span>• priority 1</span>
+                    <span>• priority 2</span>
+                    <span>• priority 3</span>
+                </div>
+                <div class="northstar-intention" id="ns-intention">Slow, clear, consistent.</div>
+            </section>
+
+            <!-- System Health & Daily State Container (Split Row) -->
+            <div class="split-row" style="display:flex; gap:24px;">
+                <!-- System Health -->
+                <section class="widget ui-card glass widget-system-health" id="system-health-widget" data-mode="shared"
+                    style="flex:1; animation-delay:0.25s; margin-bottom:0">
+                    <div class="drag-handle">⋮⋮</div>
+                    <div class="widget-title ui-title">System Health</div>
+                    <div class="system-health-bars" id="system-health-bars">
+                        <!-- Health, Wealth, Wisdom bars -->
+                    </div>
+                </section>
+
+                <!-- 3. Current Status (Daily State) -->
+                <section class="widget ui-card glass widget-daily-state" id="daily-state" data-mode="personal"
+                    style="flex:1; animation-delay:0.28s; margin-bottom:0">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="btn-edit-widget" data-widget="dailyState" title="Edit Widget">✎</button>
+                    <div class="widget-title ui-title" style="margin-bottom:12px">Current Status</div>
+                    <div id="daily-state-content" data-action="openEditModal" data-action-args="'dailyState'">
+                        <div class="state-placeholder">Log today’s state.</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 6.2 Weekly Reflection Preview -->
+            <section class="widget ui-card glass widget-reflection" id="weekly-reflection" data-mode="personal"
+                style="animation-delay:0.3s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="reflection" title="Edit Widget">✎</button>
+                <div class="reflection-line"><strong>Win:</strong> <span id="reflection-win">...</span></div>
+                <div class="reflection-line"><strong>Lesson:</strong> <span id="reflection-lesson">...</span></div>
+                <div class="reflection-line"><strong>Next Shift:</strong> <span id="reflection-next">...</span></div>
+            </section>
+
+            <!-- 7. Goals -->
+            <aside class="widget ui-card glass widget-goals" id="goals-widget" data-mode="personal"
+                style="animation-delay:0.35s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="goals" title="Edit Goals">✎</button>
+                <div class="tracker-header">
+                    <div class="widget-title ui-title" style="margin-bottom:0">ACTIVE GOALS</div>
+                </div>
+                <div id="goals-list-dashboard" class="tracker-goals-list"></div>
+            </aside>
+
+            <!-- Biz: Projects & Leverage -->
+            <section class="widget ui-card glass widget-biz-projects" id="biz-projects-widget" data-mode="business"
+                style="animation-delay:0.4s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="bizProjects" title="Edit Projects">✎</button>
+                <div class="widget-title ui-title">Projects & Leverage</div>
+                <div class="biz-projects-list" id="biz-projects-list">
+                    <!-- Injected by JS -->
+                </div>
+                <div class="biz-leverage-summary">
+                    <span class="biz-leverage-label">WEEKLY LEVERAGE SCORE</span>
+                    <span class="biz-leverage-value" id="biz-leverage-score">—</span>
+                </div>
+            </section>
+
+            <!-- 6.1 Active Worlds -->
+            <section class="widget ui-card glass widget-worlds" id="active-worlds" data-mode="shared"
+                style="animation-delay:0.45s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="worlds" title="Edit Widget">✎</button>
+                <div class="widget-title ui-title">Active Worlds</div>
+                <div class="worlds-list" id="worlds-list">
+                    <!-- World list items injected here -->
+                </div>
+            </section>
+        </div>
+
+        <!-- COLUMN 3: RIGHT (Strike, Vices, Calendar) -->
+        <div class="col-right">
+            <!-- Quick Capture (High Alert Strike Team) -->
+            <section class="widget ui-card glass widget-quick-capture" id="quick-capture-widget" data-mode="shared"
+                style="animation-delay:0.1s">
+                <div class="drag-handle">⋮⋮</div>
+                <div class="widget-title ui-title">Strike Team</div>
+                <div class="quick-alert-list" id="quick-alert-list">
+                    <!-- 3 High Alert Tasks injected here -->
+                </div>
+                <div id="quick-capture-status" class="save-status">Auto-saved</div>
+            </section>
+
+            <!-- Vault of Vices -->
+            <section class="widget ui-card glass widget-vices" id="vices-widget" data-mode="personal"
+                style="animation-delay:0.15s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="vices" title="Edit Widget">✎</button>
+                <div class="widget-title ui-title">Vault of Vices</div>
+                <div class="vices-list" id="vices-list">
+                    <!-- Vices injected here -->
+                </div>
+            </section>
+
+            <!-- Year Compass (Moved from Center) -->
+            <section class="widget ui-card glass widget-year-compass" id="year-compass-widget" data-mode="shared"
+                style="animation-delay:0.2s">
+                <div class="drag-handle">⋮⋮</div>
+                <div class="year-compass-header">
+                    <div class="widget-title ui-title">Year Compass</div>
+                    <span class="yc-progress" id="yc-progress-text"></span>
+                </div>
+                <div class="year-compass-grid" id="year-compass-grid">
+                    <!-- 52 dots injected here -->
+                </div>
+            </section>
+
+            <!-- 7b. Daily Rhythm (Habits + Rituals) -->
+            <aside class="widget ui-card glass widget-daily-rhythm" id="daily-rhythm-widget" data-mode="personal"
+                style="animation-delay:0.25s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="habitsRituals" title="Edit Rhythm">✎</button>
+
+                <div class="tracker-header">
+                    <div class="widget-title ui-title" style="margin-bottom:0">Daily Rhythm</div>
+                    <div class="tracker-summary">
+                        <svg viewBox="0 0 36 36" class="mini-ring">
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4" />
+                            <path id="tracker-ring-fill"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="var(--text-accent)" stroke-width="4" stroke-dasharray="0, 100" />
+                        </svg>
+                        <span id="tracker-subtitle">0/0</span>
+                    </div>
+                </div>
+
+                <!-- Habits -->
+                <div id="habits-list-dashboard" class="tracker-habits-list"></div>
+
+                <!-- Streak Calendar (New Feature) -->
+                <div class="streak-calendar-wrapper">
+                    <div class="streak-cal-label">LAST 28 DAYS</div>
+                    <div id="streak-calendar-grid" class="streak-calendar-grid"></div>
+                </div>
+
+                <div class="tracker-divider"></div>
+            </aside>
+
+            <!-- 6. Calendar (Monthly + Events) -->
+            <section class="widget ui-card glass widget-calendar" id="calendar-widget" data-mode="shared"
+                style="animation-delay:0.3s">
+                <div class="drag-handle">⋮⋮</div>
+                <button class="btn-edit-widget" data-widget="calendar" title="Edit Widget">✎</button>
+                <div class="widget-title ui-title">Calendar & Events</div>
+                <div class="calendar-layout">
+                    <div class="calendar-month-side">
+                        <div class="calendar-nav">
+                            <button class="cal-nav-btn" id="cal-prev">&lsaquo;</button>
+                            <span class="cal-month-label" id="cal-month-label"></span>
+                            <button class="cal-nav-btn" id="cal-next">&rsaquo;</button>
+                        </div>
+                        <div class="month-grid" id="month-grid">
+                            <span class="mg-day-header">M</span><span class="mg-day-header">T</span><span
+                                class="mg-day-header">W</span><span class="mg-day-header">T</span><span
+                                class="mg-day-header">F</span><span class="mg-day-header">S</span><span
+                                class="mg-day-header">S</span>
+                            <!-- Day cells injected -->
+                        </div>
+                    </div>
+                    <div class="calendar-events-side">
+                        <div class="widget-title ui-title">Upcoming</div>
+                        <div id="events-list"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- ========================================
+         VISION MODE — Progressive Disclosure Compass
+         ======================================== -->
+    <div class="vision-dashboard" id="dashboard-vision" data-active-layer="pulse">
+        <div class="vision-inner">
+            <section class="vision-layer vision-layer-active" id="vision-pulse-layer" data-layer="pulse">
+                <div class="vision-pulse-shell">
+                    <div class="vision-pulse-head">
+                        <div class="vision-pulse-headline">
+                            <div class="vision-pulse-kicker">Strategic Pulse</div>
+                            <h2 class="vision-pulse-title">One decision. One next move.</h2>
+                        </div>
+                        <button
+                            type="button"
+                            class="vision-pulse-deep-icon"
+                            id="vision-pulse-deep-icon"
+                            aria-label="Open deep analytics"
+                            aria-pressed="false"
+                            title="Open deep analytics">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 19V9" />
+                                <path d="M10 19V5" />
+                                <path d="M16 19v-7" />
+                                <path d="M22 19V3" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="vision-pulse-grid">
+                        <article class="vision-pulse-card vision-pulse-direction-summary">
+                            <div class="vision-pulse-label">Direction Summary</div>
+                            <div class="vision-pulse-line">
+                                <span>North Star</span>
+                                <strong id="vision-pulse-north-star">Define your north star in Planning Studio.</strong>
+                            </div>
+                            <div class="vision-pulse-line">
+                                <span>1-Year Direction</span>
+                                <strong id="vision-pulse-one-year">Set the one-year direction to orient this week.</strong>
+                            </div>
+                            <div class="vision-pulse-line vision-pulse-count" id="vision-pulse-commitments">0 commitments active</div>
+                        </article>
+
+                        <article class="vision-pulse-card vision-pulse-action-engine">
+                            <div class="vision-pulse-label">Next Action Engine</div>
+                            <strong class="vision-pulse-action-title" id="vision-pulse-next-action">Run signals to surface the next best move.</strong>
+                            <p class="vision-pulse-action-context" id="vision-pulse-next-action-context">This recommendation updates after each compute cycle.</p>
+                            <div class="vision-pulse-actions-row">
+                                <button type="button" class="vision-pulse-start-btn" id="vision-pulse-start-btn">Start</button>
+                                <button type="button" class="vision-pulse-link-btn" id="vision-pulse-view-plan">View Plan</button>
+                            </div>
+                        </article>
+                    </div>
+
+                    <article class="vision-pulse-card vision-pulse-alignment state-medium" id="vision-pulse-alignment-trigger">
+                        <div class="vision-pulse-label">Alignment Pulse</div>
+                        <div class="vision-pulse-alignment-score" id="vision-pulse-alignment-score">0</div>
+                        <div class="vision-pulse-alignment-state" id="vision-pulse-alignment-state">Low alignment</div>
+                        <p class="vision-pulse-alignment-text" id="vision-pulse-alignment-explainer">Hold direction gently. Open deep analytics only when you need more clarity.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="vision-layer vision-layer-hidden" id="vision-signals-layer" data-layer="signals" data-mounted="false" hidden>
+                <section class="vision-widget ui-card vision-signals-widget vision-layer-panel" id="vision-signals-panel">
+                    <div class="vision-layer-toolbar">
+                        <button type="button" class="vision-layer-back-btn" id="vision-signals-back-btn">Back to Pulse</button>
+                        <div class="vision-layer-title-block">
+                            <div class="vision-layer-title">Signals</div>
+                            <div class="vision-layer-subtitle">Analytical explainability layer</div>
+                        </div>
+                        <button class="vision-action-btn" id="vision-refresh-signals">Refresh Signals</button>
+                        <button
+                            type="button"
+                            class="vision-pulse-deep-icon vision-signals-toggle-icon"
+                            id="vision-signals-toggle-icon"
+                            aria-label="Hide deep analytics"
+                            aria-pressed="true"
+                            title="Hide deep analytics">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 19V9" />
+                                <path d="M10 19V5" />
+                                <path d="M16 19v-7" />
+                                <path d="M22 19V3" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="vision-layer-scroll vision-collapsible-content" id="vision-signals-content">
+                        <div class="vision-calculating" id="vision-calculating-indicator">Computing...</div>
+                        <div class="vision-alignment-overall">
+                            <span>Overall Alignment</span>
+                            <strong id="vision-overall-alignment">0</strong>
+                        </div>
+                        <div class="vision-momentum-strip" id="vision-momentum-strip"></div>
+                        <div class="vision-alignment-radar" id="vision-alignment-radar"></div>
+                        <div class="vision-drift-summary" id="vision-drift-summary"></div>
+                        <div class="vision-widget-label ui-title">Risks Right Now</div>
+                        <div class="vision-tension-list" id="vision-tension-list">
+                            <div class="state-placeholder">Risk signals appear after compute.</div>
+                        </div>
+                        <div class="vision-breakdown">
+                            <div class="breakdown-column">
+                                <div class="breakdown-label">Pillars</div>
+                                <ul id="vision-breakdown-pillars"></ul>
+                            </div>
+                            <div class="breakdown-column">
+                                <div class="breakdown-label">Risks</div>
+                                <ul id="vision-breakdown-risks"></ul>
+                            </div>
+                            <div class="breakdown-column">
+                                <div class="breakdown-label">Commitments</div>
+                                <ul id="vision-breakdown-commitments"></ul>
+                            </div>
+                        </div>
+                        <div class="vision-widget-label ui-title">Why This Changed</div>
+                        <ul class="vision-explainability-overall" id="vision-explainability-overall"></ul>
+                    </div>
+                </section>
+            </section>
+
+            <section class="vision-layer vision-layer-hidden" id="vision-planning-layer" data-layer="planning" data-mounted="false" hidden>
+                <div class="vision-layer-toolbar vision-planning-toolbar">
+                    <button type="button" class="vision-layer-back-btn" id="vision-planning-back-btn">Back to Pulse</button>
+                    <div class="vision-layer-title-block">
+                        <div class="vision-layer-title">Planning Studio</div>
+                        <div class="vision-layer-subtitle">Edit commitments, milestones, next actions, and themes</div>
+                    </div>
+                    <button type="button" class="vision-layer-link-btn" id="vision-open-history-btn">Open History</button>
+                </div>
+
+                <div class="vision-status-row">
+                    <div class="vision-status-pill state-idle" id="vision-status-pill">
+                        <span class="vision-status-state" id="vision-status-state">Idle</span>
+                        <span class="vision-status-detail" id="vision-status-detail">Ready</span>
+                    </div>
+                    <div class="vision-save-state" id="vision-save-status">Saved · Auto-synced</div>
+                    <div class="vision-last-compute" id="vision-last-compute">Last compute: —</div>
+                    <div class="vision-snapshot-marker" id="vision-snapshot-marker"></div>
+                </div>
+
+                <div class="vision-main-grid">
+                    <section class="vision-widget ui-card vision-direction-widget" id="vision-direction-widget">
+                        <div class="vision-widget-label ui-title">Direction</div>
+                        <textarea class="vision-hero-textarea" id="vision-ns-text"
+                            placeholder="What direction are you choosing right now?"></textarea>
+                        <div class="vision-horizons-grid">
+                            <label class="vision-field">
+                                <span>1-Year Direction</span>
+                                <textarea class="vision-card-textarea compact" id="vision-1yr"
+                                    placeholder="What should be true in 12 months?"></textarea>
+                            </label>
+                            <label class="vision-field">
+                                <span>5-Year Direction</span>
+                                <textarea class="vision-card-textarea compact" id="vision-5yr"
+                                    placeholder="What long arc are you building?"></textarea>
+                            </label>
+                        </div>
+                        <div class="vision-widget-label ui-title">Themes</div>
+                        <div class="vision-themes-container" id="vision-themes-list">
+                            <div class="state-placeholder">Add a theme to anchor this plan.</div>
+                        </div>
+                        <div class="vision-theme-input-row">
+                            <input type="text" class="vision-theme-input" id="vision-theme-input" placeholder="Add a theme...">
+                            <button class="vision-theme-add-btn" id="vision-theme-add-btn">+</button>
+                        </div>
+                    </section>
+
+                    <section class="vision-widget ui-card vision-week-widget" id="vision-week-widget">
+                        <div class="vision-widget-label ui-title">This Week</div>
+                        <div class="vision-inline-helper">Open or uncommit items directly from this list.</div>
+                        <div class="vision-weekly-summary" id="vision-weekly-summary">0 of 3 weekly commitments selected.</div>
+                        <div class="vision-weekly-commitments-list" id="vision-weekly-commitments-list">
+                            <div class="state-placeholder">Select up to three commitments from milestones.</div>
+                        </div>
+                    </section>
+
+                    <section class="vision-widget ui-card vision-actions-widget" id="vision-actions-widget">
+                        <div class="vision-widget-label ui-title">Next Actions</div>
+                        <div class="vision-inline-helper">Use quick actions to finish, snooze, block, or open milestones.</div>
+                        <div class="vision-action-queue" id="vision-action-queue">
+                            <div class="state-placeholder">Top actions will show after compute.</div>
+                        </div>
+                        <div class="vision-widget-label ui-title">Milestones</div>
+                        <div class="vision-milestone-input-grid">
+                            <input type="text" class="vision-milestone-title" id="vision-ms-title" placeholder="Milestone title">
+                            <input type="date" class="vision-milestone-date" id="vision-ms-date">
+                            <select id="vision-ms-type" class="vision-milestone-type">
+                                <option value="Income">Income</option>
+                                <option value="Creation">Creation</option>
+                                <option value="Health">Health</option>
+                                <option value="Relationships">Relationships</option>
+                                <option value="Meaning">Meaning</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Custom">Custom</option>
+                            </select>
+                            <input type="text" class="vision-milestone-next-action" id="vision-ms-next-action"
+                                placeholder="Next action (required)">
+                            <input type="text" class="vision-milestone-blocker" id="vision-ms-blocker"
+                                placeholder="Blocker (optional)">
+                            <button id="vision-ms-add-btn" class="vision-milestone-add-btn">Add</button>
+                        </div>
+                        <div class="vision-milestone-list" id="vision-milestone-list">
+                            <div class="state-placeholder">Add your first milestone.</div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <section class="vision-layer vision-layer-hidden" id="vision-history-layer" data-layer="history" data-mounted="false" hidden>
+                <section class="vision-widget ui-card vision-history-widget vision-layer-panel" id="vision-history-panel">
+                    <div class="vision-layer-toolbar">
+                        <button type="button" class="vision-layer-back-btn" id="vision-history-back-btn">Back to Pulse</button>
+                        <div class="vision-layer-title-block">
+                            <div class="vision-layer-title">History Vault</div>
+                            <div class="vision-layer-subtitle">Reflection and decision audit</div>
+                        </div>
+                    </div>
+
+                    <div class="vision-layer-scroll vision-collapsible-content" id="vision-history-content">
+                        <div class="vision-widget-label ui-title">Decision Check</div>
+                        <div class="vision-decision-prompt">Does this move me toward this week’s commitments?</div>
+                        <div class="vision-decision-meta">
+                            <label>Context
+                                <select id="vision-decision-context">
+                                    <option value="vision">Vision</option>
+                                    <option value="personal">Personal</option>
+                                    <option value="business">Business</option>
+                                    <option value="ritual">Ritual</option>
+                                </select>
+                            </label>
+                            <label>Type
+                                <select id="vision-decision-type">
+                                    <option value="Income">Income</option>
+                                    <option value="Creation">Creation</option>
+                                    <option value="Health">Health</option>
+                                    <option value="Relationships">Relationships</option>
+                                    <option value="Meaning">Meaning</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Custom">Custom</option>
+                                </select>
+                            </label>
+                            <input type="text" id="vision-decision-type-custom" placeholder="Custom type" class="hidden">
+                            <label>Energy
+                                <input type="text" id="vision-decision-energy" placeholder="e.g., Focused">
+                            </label>
+                            <label>Note
+                                <textarea id="vision-decision-note" rows="2" placeholder="Optional note"></textarea>
+                            </label>
+                        </div>
+                        <div class="vision-decision-buttons">
+                            <button class="vision-decision-btn" id="vision-dec-yes">YES</button>
+                            <button class="vision-decision-btn" id="vision-dec-no">NO</button>
+                        </div>
+                        <div class="vision-weekly-insights">
+                            <div id="vision-weekly-alignment">This week: Alignment +0 · Drift +0</div>
+                            <div id="vision-weekly-decisions">Decisions: 0 · Aligned: 0</div>
+                            <div id="vision-weekly-milestones">Milestones moved: 0 · Completed: 0</div>
+                        </div>
+                        <div class="vision-log-grid">
+                            <div class="vision-log-card">
+                                <div class="vision-log-title">Decision Log</div>
+                                <div id="vision-decision-log" class="vision-log-list"></div>
+                            </div>
+                            <div class="vision-log-card">
+                                <div class="vision-log-title">Drift History</div>
+                                <div id="vision-drift-history" class="vision-log-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </div>
+    </div>
+
+    <!-- ========================================
+         RITUAL MODE — Slow Life / Reflection
+         ======================================== -->
+    <div class="ritual-dashboard" id="dashboard-ritual">
+        <div class="ritual-inner">
+
+            <!-- TOP: Vinyl of the Week (Full Width) -->
+            <section class="ritual-vinyl-full" id="ritual-vinyl" data-widget="ritualVinyl" data-mode="ritual">
+                <!-- Action Buttons (top-right corner) -->
+                <div class="vinyl-actions" id="vinyl-actions">
+                    <button class="vinyl-ghost-btn" id="btn-vinyl-edit" title="Edit Vinyl">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        </svg>
+                    </button>
+                    <button class="vinyl-ghost-btn" id="btn-vinyl-spotify" title="Play preview">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                        </svg>
+                    </button>
+                    <button class="vinyl-ghost-btn" id="btn-vinyl-shuffle" title="Shuffle iTunes album">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"></polyline>
+                            <line x1="4" y1="20" x2="21" y2="3"></line>
+                            <polyline points="21 16 21 21 16 21"></polyline>
+                            <line x1="15" y1="15" x2="21" y2="21"></line>
+                            <line x1="4" y1="4" x2="9" y2="9"></line>
+                        </svg>
+                    </button>
+                    <button class="vinyl-ghost-btn" id="btn-vinyl-add-library" title="Add album to Library">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3-7 3z"></path>
+                            <line x1="12" y1="7" x2="12" y2="13"></line>
+                            <line x1="9" y1="10" x2="15" y2="10"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Display State -->
+                <div class="vinyl-display" id="vinyl-display">
+                    <div class="vinyl-artwork-container">
+                        <div class="vinyl-artwork" id="vinyl-artwork-preview"></div>
+                    </div>
+                    <div class="vinyl-info">
+                        <div class="vinyl-label">Listening Room</div>
+                        <div class="vinyl-artist" id="vinyl-artist-display">Loading Artist...</div>
+                        <div class="vinyl-album" id="vinyl-album-display">Loading Album...</div>
+                        <div class="vinyl-meta" id="vinyl-meta-display"></div>
+                        <div class="vinyl-notes" id="vinyl-notes-display">...</div>
+                        <div class="listening-room-controls">
+                            <button class="listening-room-btn" id="btn-vinyl-play-preview" type="button">Play preview</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit State (Hidden by default) -->
+                <div class="vinyl-edit-form" id="vinyl-edit-form" style="display: none;">
+                    <div class="vinyl-drop-zone" data-action="triggerFileDialog" data-action-args="'inp-vinyl-artwork'">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <span>Upload Artwork</span>
+                        <input type="file" id="inp-vinyl-artwork" style="display:none" data-action-change="handleVinylArtwork"
+                            data-action-args="'__target__'">
+                    </div>
+                    <div class="vinyl-input-stack">
+                        <div class="vinyl-query-row">
+                            <input type="text" class="vinyl-inline-input" id="inp-vinyl-bandcamp"
+                                placeholder="Search iTunes (artist + album) or paste Apple Music/iTunes album URL">
+                            <button class="btn-text" id="btn-fetch-bandcamp" data-action="fetchBandcampData" data-action-args=""
+                                style="white-space:nowrap; padding: 0 12px; font-size: 11px;">Search</button>
+                        </div>
+                        <div class="vinyl-spotify-results" id="vinyl-spotify-results"></div>
+                        <input type="text" class="vinyl-inline-input" id="inp-vinyl-artist" placeholder="Artist Name">
+                        <input type="text" class="vinyl-inline-input" id="inp-vinyl-album" placeholder="Album Title">
+                        <textarea class="vinyl-inline-textarea" id="inp-vinyl-notes"
+                            placeholder="Ritual line..."></textarea>
+                        <div class="vinyl-meta-input-row">
+                            <input type="text" class="vinyl-inline-input" id="inp-vinyl-year" placeholder="Year">
+                            <input type="text" class="vinyl-inline-input" id="inp-vinyl-genre" placeholder="Genre">
+                            <input type="text" class="vinyl-inline-input" id="inp-vinyl-label" placeholder="Label">
+                        </div>
+                        <input type="text" class="vinyl-inline-input" id="inp-vinyl-embed-url"
+                            placeholder="Apple embed URL (https://embed.music.apple.com/...)">
+                        <div class="vinyl-apple-id-row">
+                            <select class="vinyl-inline-input" id="inp-vinyl-apple-type">
+                                <option value="album">Album</option>
+                                <option value="playlist">Playlist</option>
+                                <option value="song">Song</option>
+                            </select>
+                            <input type="text" class="vinyl-inline-input" id="inp-vinyl-apple-id"
+                                placeholder="Apple Music ID">
+                            <input type="text" class="vinyl-inline-input" id="inp-vinyl-apple-storefront"
+                                placeholder="Storefront (us)">
+                        </div>
+                        <div class="vinyl-save-row">
+                            <button class="btn-text" data-action="toggleVinylEdit" data-action-args="">Cancel</button>
+                            <button class="btn-text" data-action="addVinylToLibrary" data-action-args="">Add to Library</button>
+                            <button class="btn-primary ui-btn ui-btn--primary" data-action="saveVinylWidget" data-action-args="">Save Ritual</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- LEFT COLUMN: Reflection -->
+            <div class="ritual-col ritual-col-left">
+
+                <!-- Journal Entry (Today) -->
+                <section class="ritual-widget" id="ritual-journal" data-widget="ritualJournal" data-mode="ritual">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="btn-edit-widget" data-widget="ritualJournal" title="Edit Ritual Journal">✎</button>
+                    <div class="ritual-widget-label ui-title">
+                        <div style="display:flex; align-items:center; gap:8px">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7">
+                                <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                                <path d="M2 2l1.5 1.5" />
+                                <path d="M13 18l1.5 1.5" />
+                                <path d="M11 4L7.5 7.5" />
+                            </svg>
+                            <span>Journal</span>
+                        </div>
+                        <span class="ritual-journal-date" id="ritual-journal-date"></span>
+                    </div>
+                    <textarea class="ritual-textarea" id="ritual-journal-text"
+                        placeholder="What is present today?"></textarea>
+                </section>
+
+                <!-- Gratitude (3 Lines) -->
+                <section class="ritual-widget" id="ritual-gratitude" data-widget="ritualGratitude" data-mode="ritual">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="btn-edit-widget" data-widget="ritualGratitude" title="Edit Gratitude">✎</button>
+                    <div class="ritual-widget-label ui-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7">
+                            <path
+                                d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                        </svg>
+                        Gratitude
+                    </div>
+                    <div class="ritual-gratitude-lines">
+                        <input type="text" class="ritual-gratitude-input" id="ritual-grat-1"
+                            placeholder="I am grateful for...">
+                        <div class="ritual-subtle-divider"></div>
+                        <input type="text" class="ritual-gratitude-input" id="ritual-grat-2"
+                            placeholder="I am grateful for...">
+                        <div class="ritual-subtle-divider"></div>
+                        <input type="text" class="ritual-gratitude-input" id="ritual-grat-3"
+                            placeholder="I am grateful for...">
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Counters & Gatherings -->
+            <div class="ritual-col ritual-col-right">
+
+                <!-- Walk / Forest Log -->
+                <section class="ritual-widget ui-card ritual-walk-half walk-widget" id="ritual-walk" data-widget="ritualWalk" data-mode="ritual">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="btn-edit-widget" data-widget="ritualWalk" title="Edit Walk Log">✎</button>
+                    <div class="walk-widget__header ritual-widget-label">
+                        <div class="walk-widget__title-wrap">
+                            <svg class="walk-widget__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 2L8 6h2.5L7 11h2L5 17h14l-4-6h2l-3.5-5H16L12 2z" />
+                                <path d="M12 17v4" />
+                            </svg>
+                            <div>
+                                <h2 class="walk-widget__title">Walk / Forest Log</h2>
+                                <p class="walk-widget__subtitle" id="walk-subtext">Step outside.</p>
+                            </div>
+                        </div>
+                        <span class="walk-widget__active-indicator" id="walk-active-indicator" hidden>Session active</span>
+                    </div>
+
+                    <section class="walk-widget__state walk-widget__state--idle" id="walk-state-idle">
+                        <div class="walk-widget__actions">
+                            <button class="walk-widget__btn walk-widget__btn--primary" id="walk-start-btn" type="button">Start Walk</button>
+                            <button class="walk-widget__btn walk-widget__btn--link" id="walk-view-log-btn" type="button">View Log</button>
+                        </div>
+                    </section>
+
+                    <section class="walk-widget__state walk-widget__state--active" id="walk-state-active" hidden>
+                        <div class="walk-widget__timer" id="walk-active-timer">00:00</div>
+                        <div class="walk-widget__type-list" id="walk-type-list">
+                            <button class="walk-widget__chip is-active" type="button" data-walk-type="Forest Deep">Forest Deep</button>
+                            <button class="walk-widget__chip" type="button" data-walk-type="City Drift">City Drift</button>
+                            <button class="walk-widget__chip" type="button" data-walk-type="Silent Walk">Silent Walk</button>
+                            <button class="walk-widget__chip" type="button" data-walk-type="Listening Walk">Listening Walk</button>
+                            <button class="walk-widget__chip" type="button" data-walk-type="Sauna Recovery">Sauna Recovery</button>
+                            <button class="walk-widget__chip" type="button" data-walk-type="Night Walk">Night Walk</button>
+                            <button class="walk-widget__chip" type="button" data-walk-type="Custom">Custom</button>
+                        </div>
+                        <div class="walk-widget__custom-wrap" id="walk-custom-wrap" hidden>
+                            <input class="walk-widget__custom-input" id="walk-custom-input" type="text" placeholder="Custom walk type">
+                        </div>
+                        <div class="walk-widget__quick-note-wrap" id="walk-quick-note-wrap" hidden>
+                            <label class="walk-widget__label" for="walk-quick-note-input">Quick note</label>
+                            <textarea class="walk-widget__textarea" id="walk-quick-note-input" placeholder="Capture a thought while walking."></textarea>
+                        </div>
+                        <div class="walk-widget__actions">
+                            <button class="walk-widget__btn" id="walk-pause-btn" type="button">Pause</button>
+                            <button class="walk-widget__btn" id="walk-add-note-btn" type="button">Add Note</button>
+                            <button class="walk-widget__btn walk-widget__btn--primary" id="walk-end-btn" type="button">End Walk</button>
+                        </div>
+                    </section>
+
+                    <section class="walk-widget__state walk-widget__state--completed" id="walk-state-completed" hidden>
+                        <div class="walk-widget__summary">
+                            <div class="walk-widget__summary-item">
+                                <span>Duration</span>
+                                <strong id="walk-summary-duration">00:00</strong>
+                            </div>
+                            <div class="walk-widget__summary-item">
+                                <span>Walk Type</span>
+                                <strong id="walk-summary-type">Forest Deep</strong>
+                            </div>
+                            <div class="walk-widget__summary-item">
+                                <span>Date</span>
+                                <strong id="walk-summary-date">-</strong>
+                            </div>
+                        </div>
+
+                        <div class="walk-widget__meta-field">
+                            <label class="walk-widget__label" for="walk-note-input">Reflection</label>
+                            <textarea class="walk-widget__textarea" id="walk-note-input" placeholder="What shifted while walking?"></textarea>
+                        </div>
+
+                        <div class="walk-widget__meta-grid">
+                            <div class="walk-widget__meta-field">
+                                <label class="walk-widget__label" for="walk-weather-input">Weather</label>
+                                <input class="walk-widget__input" id="walk-weather-input" type="text" placeholder="Optional">
+                            </div>
+                            <div class="walk-widget__meta-field">
+                                <label class="walk-widget__label" for="walk-location-input">Location</label>
+                                <input class="walk-widget__input" id="walk-location-input" type="text" placeholder="Optional">
+                            </div>
+                            <div class="walk-widget__meta-field">
+                                <label class="walk-widget__label" for="walk-mood-before-input">Mood Before</label>
+                                <select class="walk-widget__select" id="walk-mood-before-input">
+                                    <option value="">Select</option>
+                                    <option value="Calm">Calm</option>
+                                    <option value="Stressed">Stressed</option>
+                                    <option value="Neutral">Neutral</option>
+                                    <option value="Inspired">Inspired</option>
+                                </select>
+                            </div>
+                            <div class="walk-widget__meta-field">
+                                <label class="walk-widget__label" for="walk-mood-after-input">Mood After</label>
+                                <select class="walk-widget__select" id="walk-mood-after-input">
+                                    <option value="">Select</option>
+                                    <option value="Calm">Calm</option>
+                                    <option value="Stressed">Stressed</option>
+                                    <option value="Neutral">Neutral</option>
+                                    <option value="Inspired">Inspired</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="walk-widget__actions">
+                            <button class="walk-widget__btn" id="walk-discard-btn" type="button">Discard</button>
+                            <button class="walk-widget__btn walk-widget__btn--primary" id="walk-save-btn" type="button">Save Walk</button>
+                        </div>
+                        <div class="walk-widget__feedback" id="walk-save-feedback" hidden>Walk saved.</div>
+                    </section>
+
+                    <section class="walk-widget__log" id="walk-log-panel" hidden>
+                        <div class="walk-widget__log-header">
+                            <div class="walk-widget__log-title">Recent Log</div>
+                            <button class="walk-widget__btn walk-widget__btn--link" id="walk-hide-log-btn" type="button">Hide Log</button>
+                        </div>
+                        <div class="walk-widget__insights" id="walk-weekly-insights">
+                            <div class="walk-widget__insight-line walk-widget__insight-line--primary" id="walk-weekly-primary">This week: 0 walks · 0 min</div>
+                            <div class="walk-widget__insight-line" id="walk-weekly-average">Average: 0 min</div>
+                            <div class="walk-widget__insight-line" id="walk-weekly-type">Most frequent: None yet</div>
+                        </div>
+                        <div class="walk-widget__log-list" id="walk-log-list"></div>
+                        <div class="walk-widget__empty" id="walk-log-empty" hidden>No walks logged yet.</div>
+                    </section>
+                </section>
+
+                <!-- Days Lived Slowly -->
+                <section class="ritual-widget" id="ritual-slow-days" data-widget="ritualSlowDays" data-mode="ritual">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="btn-edit-widget" data-widget="ritualSlowDays" title="Edit Slow Days">✎</button>
+                    <div class="ritual-widget-label ui-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7">
+                            <path d="M5 2h14" />
+                            <path d="M5 22h14" />
+                            <path
+                                d="M6 2v6.7c0 2.4 1 3.5 3.5 5.3l.5.4a2 2 0 0 1 0 3.2l-.5.4c-2.5 1.8-3.5 2.9-3.5 5.3V22" />
+                            <path
+                                d="M18 2v6.7c0 2.4-1 3.5-3.5 5.3l-.5.4a2 2 0 0 0 0 3.2l.5.4c2.5 1.8 3.5 2.9 3.5 5.3V22" />
+                        </svg>
+                        Days Lived Slowly
+                    </div>
+                    <div class="ritual-counter-row">
+                        <div class="ritual-counter-value ritual-counter-big" id="ritual-slow-count">0</div>
+                        <div class="ritual-counter-meta">
+                            <span class="ritual-counter-label">slow days</span>
+                            <span class="ritual-counter-last" id="ritual-slow-last"></span>
+                        </div>
+                    </div>
+                    <button class="ritual-action-btn" id="ritual-slow-btn">Today was slow</button>
+                </section>
+
+                <!-- Upcoming Gatherings -->
+                <section class="ritual-widget" id="ritual-gatherings" data-widget="ritualGatherings" data-mode="ritual">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="btn-edit-widget" data-widget="ritualGatherings" title="Edit Gatherings">✎</button>
+                    <div class="ritual-widget-label ui-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        Upcoming Gatherings
+                    </div>
+                    <div class="ritual-gatherings-list" id="ritual-gatherings-list">
+                        <!-- Gatherings injected -->
+                    </div>
+                    <div class="ritual-gathering-input-row">
+                        <input type="text" class="ritual-gathering-name" id="ritual-gath-name"
+                            placeholder="Gathering name...">
+                        <input type="date" class="ritual-gathering-date" id="ritual-gath-date">
+                        <button class="ritual-gathering-add-btn" id="ritual-gath-add-btn">+</button>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="library-dashboard" id="dashboard-library">
+        <div class="library-shell" id="library-shell"></div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content glass" id="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Deep Focus Timer Overlay -->
+    <div id="timer-overlay" class="timer-overlay">
+        <div class="timer-bg"></div>
+        <div class="timer-content">
+            <div id="timer-large-display" class="timer-large">25:00</div>
+            <div class="timer-label">STAY FOCUSED</div>
+            <button class="btn-timer-exit" data-action="toggleZenMode" data-action-args="">Exit Session</button>
+        </div>
+    </div>
+
+    <!-- Command Palette (Cmd+K) -->
+    <div class="command-palette-overlay" id="command-palette">
+        <div class="command-palette glass">
+            <div class="cp-search">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="cp-input" placeholder="Jump to... (Cmd+K)">
+                <span class="cp-esc">ESC</span>
+            </div>
+            <div class="cp-results" id="cp-results">
+                <!-- Results injected here -->
+            </div>
+            <div class="cp-footer">
+                <span>Navigate ⇅</span>
+                <span>Select ⏎</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Command Dock -->
+    <nav class="command-dock-bar" id="global-controls">
+        <div class="command-dock-pill">
+            <button class="dock-btn" data-action="openJournalFeed" data-action-args="" title="Journal Feed">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span class="dock-btn-label">Journal</span>
+            </button>
+            <button class="dock-btn" data-action="toggleZenMode" data-action-args="" title="Focus Mode" id="btn-zen-mode">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                </svg>
+                <span class="dock-btn-label">Focus</span>
+            </button>
+            <button class="dock-btn" data-action="toggleCandleMode" data-action-args="" title="Candle Mode" id="ritual-candle-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2c-1 4-4 6-4 10a4 4 0 0 0 8 0c0-4-3-6-4-10z"></path>
+                    <path d="M12 22v-4"></path>
+                </svg>
+                <span class="dock-btn-label">Candle</span>
+            </button>
+            <button class="dock-btn" id="btn-visual-config" title="Visualizer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="2" y1="14" x2="6" y2="14"></line>
+                    <line x1="10" y1="8" x2="14" y2="8"></line>
+                    <line x1="18" y1="16" x2="22" y2="16"></line>
+                </svg>
+                <span class="dock-btn-label">Visualizer</span>
+            </button>
+            <div class="dock-density-wrap" id="dock-density-wrap">
+                <button class="dock-btn" id="btn-density-menu" title="Density" aria-haspopup="true" aria-expanded="false"
+                    aria-controls="dock-density-menu">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 6h16"></path>
+                        <path d="M4 12h12"></path>
+                        <path d="M4 18h8"></path>
+                    </svg>
+                    <span class="dock-btn-label">Density</span>
+                </button>
+                <div class="dock-density-menu hidden" id="dock-density-menu" role="menu" aria-label="Density options">
+                    <button class="dock-density-option" data-density-level="minimal" role="menuitem">Minimal</button>
+                    <button class="dock-density-option" data-density-level="adaptive" role="menuitem">Adaptive</button>
+                    <button class="dock-density-option" data-density-level="full" role="menuitem">Full</button>
+                </div>
+            </div>
+            <button class="dock-btn" data-action="openEditModal" data-action-args="'settings'" title="Global Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                <span class="dock-btn-label">Settings</span>
+            </button>
+        </div>
+    </nav>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="mode.js"></script>
+    <script src="store.js"></script>
+    <script src="js/life-graph.js"></script>
+    <script src="js/cognitive-rules.js"></script>
+    <script src="js/cognitive-memory.js"></script>
+    <script src="js/cognitive-engine.js"></script>
+    <script src="js/time-engine.js"></script>
+    <script src="js/attention-engine.js"></script>
+    <script src="js/alignment-engine.js"></script>
+    <script src="js/relationship-engine.js"></script>
+    <script src="js/creative-phase-engine.js"></script>
+    <script src="js/narrative-engine.js"></script>
+    <script src="js/system-state.js"></script>
+    <script src="js/vision-engine.js"></script>
+    <script src="js/vision-mode.js"></script>
+    <script src="js/spotify-client.js"></script>
+    <script src="js/playerAdapters/appleMusicEmbedAdapter.js"></script>
+    <script src="js/listeningRoomWidget.js"></script>
+    <script src="walk-widget.js"></script>
+    <script src="library-mode.js"></script>
+    <script src="engine/TargetRegistry.js"></script>
+    <script src="engine/ModMatrix.js"></script>
+    <script src="engine/StepSequencer.js"></script>
+    <script src="engine/VisualSynthEngine.js"></script>
+    <script src="engine/Presets.js"></script>
+    <script src="visual-synth.js"></script>
+    <script src="js/ui-density-manager.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

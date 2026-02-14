@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life OS — Journal Feed</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+</head>
+
+<body>
+    <main class="dashboard journal-focused-page">
+        <div class="journal-container">
+            <header class="widget glass journal-header-nav">
+                <a href="index.html" class="view-feed-link">&larr; Back to Dashboard</a>
+                <div class="greeting-text">Journal Feed</div>
+                <div class="topbar-actions">
+                    <div class="avatar nav-avatar">M</div>
+                </div>
+            </header>
+
+            <!-- New Entry -->
+            <section class="widget glass widget-journal">
+                <div class="widget-title">Add New Entry</div>
+                <textarea id="journal-area" placeholder="What's on your mind? (Press Enter to save)"></textarea>
+            </section>
+
+            <!-- Feed -->
+            <div id="journal-feed" class="journal-feed">
+                <!-- Entries will be injected here -->
+            </div>
+        </div>
+    </main>
+    <script src="store.js"></script>
+    <script src="app.js"></script>
+    <script src="journal.js"></script>
+</body>
+
+</html>

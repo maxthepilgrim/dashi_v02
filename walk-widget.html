@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walk / Forest Log Widget</title>
+    <link rel="stylesheet" href="walk-widget.css">
+</head>
+
+<body style="margin:0; padding:24px; background:#102129; color:#e8f8f1; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;">
+    <section class="ritual-widget ritual-walk-full walk-widget" id="ritual-walk" data-widget="ritualWalk" data-mode="ritual">
+        <div class="walk-widget__header ritual-widget-label">
+            <div class="walk-widget__title-wrap">
+                <svg class="walk-widget__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2L8 6h2.5L7 11h2L5 17h14l-4-6h2l-3.5-5H16L12 2z" />
+                    <path d="M12 17v4" />
+                </svg>
+                <div>
+                    <h2 class="walk-widget__title">Walk / Forest Log</h2>
+                    <div class="walk-widget__subtitle" id="walk-subtext">Step outside.</div>
+                </div>
+            </div>
+            <span class="walk-widget__active-indicator" id="walk-active-indicator" hidden>Session active</span>
+        </div>
+
+        <section class="walk-widget__state walk-widget__state--idle" id="walk-state-idle">
+            <div class="walk-widget__actions">
+                <button class="walk-widget__btn walk-widget__btn--primary" id="walk-start-btn" type="button">Start Walk</button>
+                <button class="walk-widget__btn walk-widget__btn--link" id="walk-view-log-btn" type="button">View Log</button>
+            </div>
+        </section>
+
+        <section class="walk-widget__state walk-widget__state--active" id="walk-state-active" hidden>
+            <div class="walk-widget__timer" id="walk-active-timer">00:00</div>
+            <div class="walk-widget__type-list" id="walk-type-list">
+                <button class="walk-widget__chip is-active" type="button" data-walk-type="Forest Deep">Forest Deep</button>
+                <button class="walk-widget__chip" type="button" data-walk-type="City Drift">City Drift</button>
+                <button class="walk-widget__chip" type="button" data-walk-type="Silent Walk">Silent Walk</button>
+                <button class="walk-widget__chip" type="button" data-walk-type="Listening Walk">Listening Walk</button>
+                <button class="walk-widget__chip" type="button" data-walk-type="Sauna Recovery">Sauna Recovery</button>
+                <button class="walk-widget__chip" type="button" data-walk-type="Night Walk">Night Walk</button>
+                <button class="walk-widget__chip" type="button" data-walk-type="Custom">Custom</button>
+            </div>
+            <div class="walk-widget__custom-wrap" id="walk-custom-wrap" hidden>
+                <input class="walk-widget__custom-input" id="walk-custom-input" type="text" placeholder="Custom walk type">
+            </div>
+            <div class="walk-widget__quick-note-wrap" id="walk-quick-note-wrap" hidden>
+                <label class="walk-widget__label" for="walk-quick-note-input">Quick note</label>
+                <textarea class="walk-widget__textarea" id="walk-quick-note-input" placeholder="Capture a thought while walking."></textarea>
+            </div>
+            <div class="walk-widget__actions">
+                <button class="walk-widget__btn" id="walk-pause-btn" type="button">Pause</button>
+                <button class="walk-widget__btn" id="walk-add-note-btn" type="button">Add Note</button>
+                <button class="walk-widget__btn walk-widget__btn--primary" id="walk-end-btn" type="button">End Walk</button>
+            </div>
+        </section>
+
+        <section class="walk-widget__state walk-widget__state--completed" id="walk-state-completed" hidden>
+            <div class="walk-widget__summary">
+                <div class="walk-widget__summary-item">
+                    <span>Duration</span>
+                    <strong id="walk-summary-duration">00:00</strong>
+                </div>
+                <div class="walk-widget__summary-item">
+                    <span>Walk Type</span>
+                    <strong id="walk-summary-type">Forest Deep</strong>
+                </div>
+                <div class="walk-widget__summary-item">
+                    <span>Date</span>
+                    <strong id="walk-summary-date">-</strong>
+                </div>
+            </div>
+
+            <div class="walk-widget__meta-field">
+                <label class="walk-widget__label" for="walk-note-input">Reflection</label>
+                <textarea class="walk-widget__textarea" id="walk-note-input" placeholder="What shifted while walking?"></textarea>
+            </div>
+
+            <div class="walk-widget__meta-grid">
+                <div class="walk-widget__meta-field">
+                    <label class="walk-widget__label" for="walk-weather-input">Weather</label>
+                    <input class="walk-widget__input" id="walk-weather-input" type="text" placeholder="Optional">
+                </div>
+                <div class="walk-widget__meta-field">
+                    <label class="walk-widget__label" for="walk-location-input">Location</label>
+                    <input class="walk-widget__input" id="walk-location-input" type="text" placeholder="Optional">
+                </div>
+                <div class="walk-widget__meta-field">
+                    <label class="walk-widget__label" for="walk-mood-before-input">Mood Before</label>
+                    <select class="walk-widget__select" id="walk-mood-before-input">
+                        <option value="">Select</option>
+                        <option value="Calm">Calm</option>
+                        <option value="Stressed">Stressed</option>
+                        <option value="Neutral">Neutral</option>
+                        <option value="Inspired">Inspired</option>
+                    </select>
+                </div>
+                <div class="walk-widget__meta-field">
+                    <label class="walk-widget__label" for="walk-mood-after-input">Mood After</label>
+                    <select class="walk-widget__select" id="walk-mood-after-input">
+                        <option value="">Select</option>
+                        <option value="Calm">Calm</option>
+                        <option value="Stressed">Stressed</option>
+                        <option value="Neutral">Neutral</option>
+                        <option value="Inspired">Inspired</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="walk-widget__actions">
+                <button class="walk-widget__btn" id="walk-discard-btn" type="button">Discard</button>
+                <button class="walk-widget__btn walk-widget__btn--primary" id="walk-save-btn" type="button">Save Walk</button>
+            </div>
+            <div class="walk-widget__feedback" id="walk-save-feedback" hidden>Walk saved.</div>
+        </section>
+
+        <section class="walk-widget__log" id="walk-log-panel" hidden>
+            <div class="walk-widget__log-header">
+                <div class="walk-widget__log-title">Recent Log</div>
+                <button class="walk-widget__btn walk-widget__btn--link" id="walk-hide-log-btn" type="button">Hide Log</button>
+            </div>
+            <div class="walk-widget__insights" id="walk-weekly-insights">
+                <div class="walk-widget__insight-line walk-widget__insight-line--primary" id="walk-weekly-primary">This week: 0 walks · 0 min</div>
+                <div class="walk-widget__insight-line" id="walk-weekly-average">Average: 0 min</div>
+                <div class="walk-widget__insight-line" id="walk-weekly-type">Most frequent: None yet</div>
+            </div>
+            <div class="walk-widget__log-list" id="walk-log-list"></div>
+            <div class="walk-widget__empty" id="walk-log-empty" hidden>No walks logged yet.</div>
+        </section>
+    </section>
+
+    <script src="walk-widget.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            if (window.WalkUI && typeof window.WalkUI.init === 'function') {
+                window.WalkUI.init();
+            }
+        });
+    </script>
+</body>
+
+</html>
